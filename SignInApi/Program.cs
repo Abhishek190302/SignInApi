@@ -19,6 +19,9 @@ builder.Services.AddTransient<ICategoryService, CategoryService>();
 // Register the ICategoryServices
 builder.Services.AddTransient<ICategoryServices, CategoryServices>();
 
+builder.Services.AddTransient<UserRepository>();
+builder.Services.AddTransient<CompanyDetailsRepository>();
+builder.Services.AddTransient<UserService>();
 
 //Configure Cors
 builder.Services.AddCors(options =>
