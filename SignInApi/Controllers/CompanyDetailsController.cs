@@ -18,8 +18,8 @@ namespace SignInApi.Controllers
         }
 
         [HttpPost]
-        [Route("AddOrUpdateCompany")]
-        public async Task<IActionResult> AddOrUpdateCompany(CompanyViewModel companyVM)
+        [Route("AddOrUpdateCompanyDetails")]
+        public async Task<IActionResult> AddOrUpdateCompanyDetails(CompanyViewModel companyVM)
         {
             if (!companyVM.IsValid())
             {
