@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using SignInApi.Models;
@@ -19,11 +20,15 @@ builder.Services.AddTransient<ICategoryService, CategoryService>();
 // Register the ICategoryServices
 builder.Services.AddTransient<ICategoryServices, CategoryServices>();
 
+builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<UserRepository>();
 builder.Services.AddTransient<CompanyDetailsRepository>();
-builder.Services.AddTransient<UserService>();
+builder.Services.AddTransient<CommunicationRepository>();
 
+
+builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("MyAllowSpecificOrigins",

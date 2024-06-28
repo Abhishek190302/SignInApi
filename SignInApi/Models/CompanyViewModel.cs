@@ -5,6 +5,7 @@ namespace SignInApi.Models
 {
     public class CompanyViewModel
     {
+        // Company Details Model
         public string CompanyName { get; set; }
         public string BusinessCategory { get; set; }
         public string NatureOfBusiness { get; set; }

@@ -61,7 +61,7 @@ namespace SignInApi.Controllers
                     {
 
                         await _companydetailsRepository.AddListingAsync(listing);
-                        return Ok(new { Message = "Listing created successfully", Listing = listing });
+                        return Ok(new { Message = "Company Details created successfully", Listing = listing });
                     }
                     else
                     {
@@ -71,13 +71,15 @@ namespace SignInApi.Controllers
                         listing.Status = 1;
 
                         await _companydetailsRepository.UpdateListingAsync(listing);
-                        return Ok(new { Message = "Listing updated successfully", Listing = listing });
+                        return Ok(new { Message = "Company Details updated successfully", Listing = listing });
                     }
                 }
                 catch (Exception ex)
                 {
                     return StatusCode(500, "Internal server error");
                 }
+
+
             }
             return NotFound("User not found");
         }
