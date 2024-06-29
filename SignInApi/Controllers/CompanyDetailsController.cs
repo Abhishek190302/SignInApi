@@ -79,7 +79,6 @@ namespace SignInApi.Controllers
                     return StatusCode(500, "Internal server error");
                 }
 
-
             }
             return NotFound("User not found");
         }
