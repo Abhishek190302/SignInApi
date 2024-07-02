@@ -20,16 +20,16 @@ builder.Services.AddTransient<ICategoryService, CategoryService>();
 // Register the ICategoryServices
 builder.Services.AddTransient<ICategoryServices, CategoryServices>();
 
-// Register the IAddressRepositery
-builder.Services.AddTransient<IAddressRepositery, AddressRepositery>();
+
 
 builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<UserRepository>();
 builder.Services.AddTransient<CompanyDetailsRepository>();
-
 builder.Services.AddTransient<CommunicationRepository>();
-
-
+// Register the IAddressRepositery
+builder.Services.AddTransient<IAddressRepositery, AddressRepositery>();
+builder.Services.AddTransient<CategoryRepository>();
+builder.Services.AddTransient<SpecialisationRepository>();
 builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
 
