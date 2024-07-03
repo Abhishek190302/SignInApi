@@ -33,5 +33,6 @@
         public bool ShoppingMall { get; set; }
         public bool Showroom { get; set; }
         public bool Warehouse { get; set; }
+        public bool SelectAll { get; set; }
     }
 }

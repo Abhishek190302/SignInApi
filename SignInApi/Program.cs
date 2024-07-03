@@ -30,6 +30,8 @@ builder.Services.AddTransient<CommunicationRepository>();
 builder.Services.AddTransient<IAddressRepositery, AddressRepositery>();
 builder.Services.AddTransient<CategoryRepository>();
 builder.Services.AddTransient<SpecialisationRepository>();
+builder.Services.AddTransient<WorkingHoursRepository>();
+builder.Services.AddTransient<PaymentModeRepository>();
 builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
 

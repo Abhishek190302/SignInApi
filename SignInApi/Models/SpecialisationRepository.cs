@@ -14,59 +14,61 @@ namespace SignInApi.Models
         public async Task<Specialisation> GetSpecialisationByListingId(int listingId)
         {
             Specialisation specialisation = null;
-
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
                 using (SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Specialisation] WHERE ListingID = @ListingID", conn))
                 {
                     cmd.Parameters.AddWithValue("@ListingID", listingId);
-                    using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                    using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
                     {
-                        if (await reader.ReadAsync())
+                        DataTable dataTable = new DataTable();
+                        adapter.Fill(dataTable);
+
+                        if (dataTable.Rows.Count > 0)
                         {
+                            DataRow row = dataTable.Rows[0];
                             specialisation = new Specialisation
                             {
-                                ListingID = reader.GetInt32(reader.GetOrdinal("ListingID")),
-                                OwnerGuid = reader.GetString(reader.GetOrdinal("OwnerGuid")),
-                                IPAddress = reader.GetString(reader.GetOrdinal("IPAddress")),
-                                AcceptTenderWork = reader.GetBoolean(reader.GetOrdinal("AcceptTenderWork")),
-                                Bank = reader.GetBoolean(reader.GetOrdinal("Banks")),
-                                BeautyParlors = reader.GetBoolean(reader.GetOrdinal("BeautyParlors")),
-                                Bungalow = reader.GetBoolean(reader.GetOrdinal("Bungalow")),
-                                CallCenter = reader.GetBoolean(reader.GetOrdinal("CallCenter")),
-                                Church = reader.GetBoolean(reader.GetOrdinal("Church")),
-                                Company = reader.GetBoolean(reader.GetOrdinal("Company")),
-                                ComputerInstitute = reader.GetBoolean(reader.GetOrdinal("ComputerInstitute")),
-                                Dispensary = reader.GetBoolean(reader.GetOrdinal("Dispensary")),
-                                ExhibitionStall = reader.GetBoolean(reader.GetOrdinal("ExhibitionStall")),
-                                Factory = reader.GetBoolean(reader.GetOrdinal("Factory")),
-                                Farmhouse = reader.GetBoolean(reader.GetOrdinal("Farmhouse")),
-                                Gurudwara = reader.GetBoolean(reader.GetOrdinal("Gurudwara")),
-                                Gym = reader.GetBoolean(reader.GetOrdinal("Gym")),
-                                HealthClub = reader.GetBoolean(reader.GetOrdinal("HealthClub")),
-                                Home = reader.GetBoolean(reader.GetOrdinal("Home")),
-                                Hospital = reader.GetBoolean(reader.GetOrdinal("Hospital")),
-                                Hotel = reader.GetBoolean(reader.GetOrdinal("Hotel")),
-                                Laboratory = reader.GetBoolean(reader.GetOrdinal("Laboratory")),
-                                Mandir = reader.GetBoolean(reader.GetOrdinal("Mandir")),
-                                Mosque = reader.GetBoolean(reader.GetOrdinal("Mosque")),
-                                Office = reader.GetBoolean(reader.GetOrdinal("Office")),
-                                Plazas = reader.GetBoolean(reader.GetOrdinal("Plazas")),
-                                ResidentialSociety = reader.GetBoolean(reader.GetOrdinal("ResidentialSociety")),
-                                Resorts = reader.GetBoolean(reader.GetOrdinal("Resorts")),
-                                Restaurants = reader.GetBoolean(reader.GetOrdinal("Restaurants")),
-                                Salons = reader.GetBoolean(reader.GetOrdinal("Salons")),
-                                Shop = reader.GetBoolean(reader.GetOrdinal("Shop")),
-                                ShoppingMall = reader.GetBoolean(reader.GetOrdinal("ShoppingMall")),
-                                Showroom = reader.GetBoolean(reader.GetOrdinal("Showroom")),
-                                Warehouse = reader.GetBoolean(reader.GetOrdinal("Warehouse"))
+                                ListingID = Convert.ToInt32(row["ListingID"]),
+                                OwnerGuid = Convert.ToString(row["OwnerGuid"]),
+                                IPAddress = Convert.ToString(row["IPAddress"]),
+                                AcceptTenderWork = Convert.ToBoolean(row["AcceptTenderWork"]),
+                                Bank = Convert.ToBoolean(row["Banks"]),
+                                BeautyParlors = Convert.ToBoolean(row["BeautyParlors"]),
+                                Bungalow = Convert.ToBoolean(row["Bungalow"]),
+                                CallCenter = Convert.ToBoolean(row["CallCenter"]),
+                                Church = Convert.ToBoolean(row["Church"]),
+                                Company = Convert.ToBoolean(row["Company"]),
+                                ComputerInstitute = Convert.ToBoolean(row["ComputerInstitute"]),
+                                Dispensary = Convert.ToBoolean(row["Dispensary"]),
+                                ExhibitionStall = Convert.ToBoolean(row["ExhibitionStall"]),
+                                Factory = Convert.ToBoolean(row["Factory"]),
+                                Farmhouse = Convert.ToBoolean(row["Farmhouse"]),
+                                Gurudwara = Convert.ToBoolean(row["Gurudwara"]),
+                                Gym = Convert.ToBoolean(row["Gym"]),
+                                HealthClub = Convert.ToBoolean(row["HealthClub"]),
+                                Home = Convert.ToBoolean(row["Home"]),
+                                Hospital = Convert.ToBoolean(row["Hospital"]),
+                                Hotel = Convert.ToBoolean(row["Hotel"]),
+                                Laboratory = Convert.ToBoolean(row["Laboratory"]),
+                                Mandir = Convert.ToBoolean(row["Mandir"]),
+                                Mosque = Convert.ToBoolean(row["Mosque"]),
+                                Office = Convert.ToBoolean(row["Office"]),
+                                Plazas = Convert.ToBoolean(row["Plazas"]),
+                                ResidentialSociety = Convert.ToBoolean(row["ResidentialSociety"]),
+                                Resorts = Convert.ToBoolean(row["Resorts"]),
+                                Restaurants = Convert.ToBoolean(row["Restaurants"]),
+                                Salons = Convert.ToBoolean(row["Salons"]),
+                                Shop = Convert.ToBoolean(row["Shop"]),
+                                ShoppingMall = Convert.ToBoolean(row["ShoppingMall"]),
+                                Showroom = Convert.ToBoolean(row["Showroom"]),
+                                Warehouse = Convert.ToBoolean(row["Warehouse"])
                             };
                         }
                     }
                 }
             }
-
             return specialisation;
         }
 
@@ -77,7 +79,6 @@ namespace SignInApi.Models
                 using (SqlCommand cmd = new SqlCommand("Usp_Specialisation", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
                     cmd.Parameters.AddWithValue("@ListingID", specialisation.ListingID);
                     cmd.Parameters.AddWithValue("@OwnerGuid", specialisation.OwnerGuid);
                     cmd.Parameters.AddWithValue("@IPAddress", specialisation.IPAddress);
@@ -112,7 +113,6 @@ namespace SignInApi.Models
                     cmd.Parameters.AddWithValue("@ShoppingMall", specialisation.ShoppingMall);
                     cmd.Parameters.AddWithValue("@Showroom", specialisation.Showroom);
                     cmd.Parameters.AddWithValue("@Warehouse", specialisation.Warehouse);
-
                     await conn.OpenAsync();
                     await cmd.ExecuteNonQueryAsync();
                 }
