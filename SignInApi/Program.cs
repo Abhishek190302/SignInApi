@@ -32,6 +32,8 @@ builder.Services.AddTransient<CategoryRepository>();
 builder.Services.AddTransient<SpecialisationRepository>();
 builder.Services.AddTransient<WorkingHoursRepository>();
 builder.Services.AddTransient<PaymentModeRepository>();
+builder.Services.AddTransient<SocialNetworkRepository>();
+builder.Services.AddTransient<KeywordRepository>();
 builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
 
@@ -89,7 +91,7 @@ app.UseHttpsRedirection();
 app.UseCors("MyAllowSpecificOrigins");
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlingMiddleware>(); // Add this line
 
 app.MapControllers();

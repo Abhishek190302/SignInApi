@@ -16,4 +16,8 @@
     <PackageReference Include="Twilio" Version="7.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\images\logos\" />
+  </ItemGroup>
+
 </Project>

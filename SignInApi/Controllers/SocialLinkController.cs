@@ -1,0 +1,79 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using SignInApi.Models;
+
+namespace SignInApi.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class SocialLinkController : ControllerBase
+    {
+        private readonly UserService _userService;
+        private readonly SocialNetworkRepository _socialNetworkRepository;
+        private readonly CompanyDetailsRepository _companydetailsRepository;
+        public SocialLinkController(SocialNetworkRepository socialNetworkRepository, UserService userService, CompanyDetailsRepository companyDetailsRepository)
+        {
+            _socialNetworkRepository = socialNetworkRepository;
+            _userService = userService;
+            _companydetailsRepository = companyDetailsRepository;
+        }
+
+        [HttpPost]
+        [Route("CreateSocialLink")]
+        public async Task<IActionResult> CreateSocialLink(SocialNetworkViewModel socialnetworkVM)
+        {
+            var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
+            if (applicationUser != null)
+            {
+                try
+                {
+                    string currentUserGuid = applicationUser.Id.ToString();
+                    var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
+                    if (listing != null)
+                    {
+                        var socialnetwork = await _socialNetworkRepository.GetSocialNetworkByListingId(listing.Listingid);
+                        bool recordNotFound = socialnetwork == null;
+                        if (recordNotFound)
+                        {
+                            socialnetwork = new SocialNetwork
+                            {
+                                OwnerGuid = currentUserGuid,
+                                ListingID = listing.Listingid,
+                                IPAddress = HttpContext.Connection.RemoteIpAddress.ToString()
+                            };
+                        }
+
+                        // Map properties from CommunicationViewModel to Communication
+
+                        socialnetwork.Facebook = socialnetworkVM.Facebook;
+                        socialnetwork.WhatsappGroupLink = socialnetworkVM.WhatsappGroupLink;
+                        socialnetwork.Linkedin = socialnetworkVM.Linkedin;
+                        socialnetwork.Twitter = socialnetworkVM.Twitter;
+                        socialnetwork.Youtube = socialnetworkVM.Youtube;
+                        socialnetwork.Instagram = socialnetworkVM.Instagram;
+                        socialnetwork.Pinterest = socialnetworkVM.Pinterest;
+
+                        if (recordNotFound)
+                        {
+                            await _socialNetworkRepository.AddAsync(socialnetwork);
+                            return Ok(new { Message = "SocialLink Details created successfully", SocialLink = socialnetwork });
+                        }
+                        else
+                        {
+                            await _socialNetworkRepository.UpdateAsync(socialnetwork);
+                            return Ok(new { Message = "SocialLink Details Updated successfully", Communication = socialnetwork });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, "Internal server error");
+                }
+            }
+            return NotFound("User not found");
+
+            //}
+            //return Unauthorized();
+        }
+    }
+}
