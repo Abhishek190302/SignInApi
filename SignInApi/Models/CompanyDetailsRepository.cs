@@ -61,6 +61,54 @@ namespace SignInApi.Models
             }
         }
 
+
+        public async Task<Listing> GetListingByIdAsync(int listingid)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID = @ListingID", conn);
+                    cmd.Parameters.AddWithValue("@ListingID", listingid);
+                    await conn.OpenAsync();
+                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+                    if (dt.Rows.Count > 0)
+                    {
+                        DataRow row = dt.Rows[0];
+                        var listing = new Listing
+                        {
+                            Listingid = row.Field<int?>("ListingID") ?? 0,
+                            OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                            CreatedDate = row.Field<DateTime?>("CreatedDate") ?? default(DateTime),
+                            CreatedTime = row.Field<DateTime?>("CreatedTime") ?? default(DateTime),
+                            IPAddress = row.Field<string>("IPAddress") ?? string.Empty,
+                            Status = row.Field<int?>("Status") ?? 0,
+                            Name = row.Field<string>("Name") ?? string.Empty,
+                            LastName = row.Field<string>("LastName") ?? string.Empty,
+                            Gender = row.Field<string>("Gender") ?? string.Empty,
+                            Designation = row.Field<string>("Designation") ?? string.Empty,
+                            ListingURL = row.Field<string>("ListingURL") ?? string.Empty,
+                            ApprovedOrRejectedBy = row.Field<bool?>("ApprovedOrRejectedBy") ?? false,
+                            Rejected = row.Field<bool?>("Rejected") ?? false,
+                            Steps = row.Field<int?>("Steps") ?? 0,
+                            Id = row.Field<Guid?>("Id") ?? Guid.Empty,
+                            ClaimedListing = row.Field<bool?>("ClaimedListing") ?? false,
+                            SelfCreated = row.Field<bool?>("SelfCreated") ?? false
+                        };
+                        return listing;
+                    }
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+            
+        }
+
         public async Task<Listing> AddListingAsync(Listing listing)
         {
             try
