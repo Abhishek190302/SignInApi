@@ -9,12 +9,16 @@ namespace SignInApi.Controllers
     [ApiController]
     public class ListingsController : ControllerBase
     {
+        private readonly UserService _userService;
         private readonly IListingService _listingService;
         private readonly ILogger<ListingService> _logger;
-        public ListingsController(IListingService listingService, ILogger<ListingService> logger)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public ListingsController(IListingService listingService, ILogger<ListingService> logger, UserService userService, IHttpContextAccessor httpContextAccessor)
         {
             _listingService = listingService;
             _logger = logger;
+            _userService = userService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpGet] 
@@ -23,8 +27,19 @@ namespace SignInApi.Controllers
         {   
             try
             {
-                var listings = await _listingService.GetListings();
-                return Ok(listings);
+                var user = _httpContextAccessor.HttpContext.User;
+                if (user.Identity.IsAuthenticated)
+                {
+                    var userName = user.Identity.Name;
+
+                    var applicationUser = await _userService.GetUserByUserName(userName);
+                    if (applicationUser != null)
+                    {
+                        var listings = await _listingService.GetListings();
+                        return Ok(listings);
+                    }
+                }
+                return Ok();
             }
             catch (Exception ex)
             {

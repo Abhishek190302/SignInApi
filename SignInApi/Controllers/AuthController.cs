@@ -14,11 +14,13 @@ namespace SignInApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IConfiguration _configuration;
+        private readonly TokenService _tokenService;
         private readonly PasswordHasher<ApplicationUsers> _passwordHasher;
-        public AuthController(IConfiguration configuration)
+        public AuthController(IConfiguration configuration, TokenService tokenService)
         {
             _configuration = configuration;
             _passwordHasher = new PasswordHasher<ApplicationUsers>();
+            _tokenService = tokenService;
         }
 
         [HttpPost]
@@ -34,7 +36,11 @@ namespace SignInApi.Controllers
 
             if (response.StatusCode == Constantss.Success)
             {
-                return Ok(response);
+                var user = response.User; // Ensure this is an ApplicationUsers object
+                var token = _tokenService.GenerateToken(user);
+                return Ok(new { Token = token, RedirectToUrl = response.RedirectToUrl });
+
+                //return Ok(response);
             }
 
             return Unauthorized(response);
@@ -66,7 +72,8 @@ namespace SignInApi.Controllers
                 {
                     Id = row["Id"].ToString(),
                     Email = row["Email"].ToString(),
-                    PasswordHash = row["PasswordHash"].ToString() // Assuming you store the hash
+                    PasswordHash = row["PasswordHash"].ToString(),
+                    IsVendor = Convert.ToBoolean(row["IsVendor"])// Assuming you store the hash
                 };
 
                 bool canSignIn = await CanSignInAsync(usr);
@@ -79,6 +86,7 @@ namespace SignInApi.Controllers
                         errorResponse.RedirectToUrl = userProfile == null ? "/MyAccount/UserProfile" :
                             !userProfile.IsProfileCompleted ? "/MyAccount/ProfileInfo" : "/";
                         errorResponse.StatusCode = Constantss.Success;
+                        errorResponse.User = usr; // Include user details in the response
                     }
                     else
                     {

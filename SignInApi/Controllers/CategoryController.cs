@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SignInApi.Models;
+using System;
 
 namespace SignInApi.Controllers
 {
@@ -10,17 +11,32 @@ namespace SignInApi.Controllers
     [EnableCors("MyAllowSpecificOrigins")]
     public class CategoryController : ControllerBase
     {
+        private readonly UserService _userService;
         private readonly ICategoryService _categoryService;
-        public CategoryController(ICategoryService categoryService)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public CategoryController(ICategoryService categoryService, IHttpContextAccessor httpContextAccessor, UserService userService)
         {
             _categoryService = categoryService;
+            _httpContextAccessor = httpContextAccessor;
+            _userService = userService;
         }
 
-        [HttpGet("GetCategories")]
+        [HttpGet]
+        [Route("GetCategories")]
         public async Task<ActionResult<IndexVM>> GetCategories()
         {
             var indexVM = new IndexVM();
-            await _categoryService.GetCategoriesForIndexPageAsync(indexVM);
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
+            {
+                var userName = user.Identity.Name;
+
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
+                {
+                    await _categoryService.GetCategoriesForIndexPageAsync(indexVM);                    
+                }
+            }
             return Ok(indexVM);
         }
     }

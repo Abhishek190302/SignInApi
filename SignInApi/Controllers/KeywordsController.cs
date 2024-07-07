@@ -9,103 +9,114 @@ namespace SignInApi.Controllers
     public class KeywordsController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly KeywordRepository _keywordRepository;
         private readonly CompanyDetailsRepository _companydetailsRepository;
         private static List<Keyword> keywordList = new List<Keyword>();
         private static List<Keyword> deleteKeywordsList = new List<Keyword>();
-        public KeywordsController(KeywordRepository keywordRepository, UserService userService, CompanyDetailsRepository companyDetailsRepository)
+        public KeywordsController(KeywordRepository keywordRepository, UserService userService, CompanyDetailsRepository companyDetailsRepository , IHttpContextAccessor httpContextAccessor)
         {
-            _userService= userService;
+            _userService = userService;
             _keywordRepository = keywordRepository;
             _companydetailsRepository = companyDetailsRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        [HttpPost("ManageKeywords")]
+        [HttpPost]
+        [Route("ManageKeywords")]
         public async Task<IActionResult> ManageKeywords([FromBody] KeywordActionRequest request)
         {
-            var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
-            if (applicationUser != null)
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
             {
-                try
+                var userName = user.Identity.Name;
+
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
                 {
-                    string currentUserGuid = applicationUser.Id.ToString();
-                    var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
-                    if (listing != null)
+                    try
                     {
-                        switch (request.Action.ToLower())
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
+                        if (listing != null)
                         {
-                            case "add":
-                                if (string.IsNullOrWhiteSpace(request.Keyword))
-                                {
-                                    return BadRequest("Keyword cannot be empty");
-                                }
+                            switch (request.Action.ToLower())
+                            {
+                                case "add":
+                                    if (string.IsNullOrWhiteSpace(request.Keyword))
+                                    {
+                                        return BadRequest("Keyword cannot be empty");
+                                    }
 
-                                var keywordToAdd = new Keyword
-                                {
-                                    ListingID = listing.Listingid, // Replace with actual ListingId
-                                    OwnerGuid = currentUserGuid, // Replace with actual CurrentUserGuid
-                                    SeoKeyword = request.Keyword
-                                };
+                                    var keywordToAdd = new Keyword
+                                    {
+                                        ListingID = listing.Listingid, // Replace with actual ListingId
+                                        OwnerGuid = currentUserGuid, // Replace with actual CurrentUserGuid
+                                        SeoKeyword = request.Keyword
+                                    };
 
-                                if (await _keywordRepository.KeywordExists(keywordToAdd.SeoKeyword))
-                                {
-                                    return Conflict($"{request.Keyword} already exists in the listing");
-                                }
+                                    if (await _keywordRepository.KeywordExists(keywordToAdd.SeoKeyword))
+                                    {
+                                        return Conflict($"{request.Keyword} already exists in the listing");
+                                    }
 
-                                // Add keyword to the list
-                                keywordList.Add(keywordToAdd);
-                                return Ok("Keyword added to the list successfully");
+                                    // Add keyword to the list
+                                    keywordList.Add(keywordToAdd);
+                                    return Ok("Keyword added to the list successfully");
 
-                            case "remove":
-                                if (string.IsNullOrWhiteSpace(request.Keyword))
-                                {
-                                    return BadRequest("Keyword cannot be empty");
-                                }
+                                case "remove":
+                                    if (string.IsNullOrWhiteSpace(request.Keyword))
+                                    {
+                                        return BadRequest("Keyword cannot be empty");
+                                    }
 
-                                // Remove keyword from the list
-                                var keywordToRemove = keywordList.Find(k => k.SeoKeyword == request.Keyword);
-                                if (keywordToRemove != null)
-                                {
-                                    keywordList.Remove(keywordToRemove);
-                                    deleteKeywordsList.Add(keywordToRemove);
-                                }
-                                return Ok("Keyword removed from the list successfully");
+                                    // Remove keyword from the list
+                                    var keywordToRemove = keywordList.Find(k => k.SeoKeyword == request.Keyword);
+                                    if (keywordToRemove != null)
+                                    {
+                                        keywordList.Remove(keywordToRemove);
+                                        deleteKeywordsList.Add(keywordToRemove);
+                                    }
+                                    return Ok("Keyword removed from the list successfully");
 
-                            case "save":
-                                if (keywordList.Count == 0)
-                                {
-                                    return BadRequest("Keywords list is empty");
-                                }
+                                case "save":
+                                    if (keywordList.Count == 0)
+                                    {
+                                        return BadRequest("Keywords list is empty");
+                                    }
 
-                                // Save all keywords in the list to the database
-                                await _keywordRepository.SaveKeywordsAsync(keywordList);
-                                keywordList.Clear(); // Clear the list after saving
+                                    // Save all keywords in the list to the database
+                                    await _keywordRepository.SaveKeywordsAsync(keywordList);
+                                    keywordList.Clear(); // Clear the list after saving
 
-                                // Remove all deleted keywords from the database
-                                await _keywordRepository.RemoveKeywordsAsync(deleteKeywordsList);
-                                deleteKeywordsList.Clear(); // Clear the delete list after saving
+                                    // Remove all deleted keywords from the database
+                                    await _keywordRepository.RemoveKeywordsAsync(deleteKeywordsList);
+                                    deleteKeywordsList.Clear(); // Clear the delete list after saving
 
-                                // Retrieve the updated list of keywords from the database
-                                var updatedKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
+                                    // Retrieve the updated list of keywords from the database
+                                    var updatedKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
 
-                                return Ok(new
-                                {
-                                    Message = "Keywords saved successfully",
-                                    Keywords = updatedKeywords
-                                });
+                                    return Ok(new
+                                    {
+                                        Message = "Keywords saved successfully",
+                                        Keywords = updatedKeywords
+                                    });
 
-                            default:
-                                return BadRequest("Invalid action specified");
+                                default:
+                                    return BadRequest("Invalid action specified");
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        // Log the exception if you have a logging mechanism
+                        return StatusCode(500, $"Internal server error: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    // Log the exception if you have a logging mechanism
-                    return StatusCode(500, $"Internal server error: {ex.Message}");
-                }
+                return NotFound("User not found");
+
             }
-            return NotFound("User not found");
+            return Unauthorized();
         }
     }
 }

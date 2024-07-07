@@ -13,44 +13,55 @@ namespace SignInApi.Controllers
     public class UserProfileController : ControllerBase
     {
         private readonly string _connectionString;
-
-        public UserProfileController(IConfiguration configuration)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public UserProfileController(IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _connectionString = configuration.GetConnectionString("MimUser");
+            _httpContextAccessor = httpContextAccessor;
+
         }
 
-        [HttpGet("GetUserProfile")]
-        public async Task<IActionResult> GetUserProfileAsync(string userName)
+        [HttpGet]
+        [Route("GetUserProfile")]
+        public async Task<IActionResult> GetUserProfileAsync()
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                var user = _httpContextAccessor.HttpContext.User;
+                if (user.Identity.IsAuthenticated)
                 {
-                    await connection.OpenAsync();
+                    var userName = user.Identity.Name;
 
-                    // Fetch user details
-                    var user = await GetUserByUserNameAsync(connection, userName);
-
-                    if (user == null)
+                    using (var connection = new SqlConnection(_connectionString))
                     {
-                        return NotFound("User not found.");
+                        await connection.OpenAsync();
+
+                        // Fetch user details
+                        var userprofile = await GetUserByUserNameAsync(connection, userName);
+
+                        if (user == null)
+                        {
+                            return NotFound("User not found.");
+                        }
+
+                        // Fetch user profile
+                        var userProfile = await GetProfileByOwnerGuidAsync(connection, userprofile.Id);
+
+                        var userProfileVM = new UserProfileVM
+                        {
+                            Email = userprofile.Email,
+                            Phone = userprofile.PhoneNumber,
+                            isVendor = userprofile.IsVendor,
+                            Name = userProfile?.Name,
+                            LastName = userProfile?.LastName,
+                            ImgUrl = userProfile?.ImageUrl,
+                            Gender = userProfile?.Gender
+                        };
+
+                        return Ok(userProfileVM);
                     }
-
-                    // Fetch user profile
-                    var userProfile = await GetProfileByOwnerGuidAsync(connection, user.Id);
-
-                    var userProfileVM = new UserProfileVM
-                    {
-                        Email = user.Email,
-                        Phone = user.PhoneNumber,
-                        isVendor = user.IsVendor,
-                        Name = userProfile?.Name,
-                        LastName = userProfile?.LastName,
-                        ImgUrl = userProfile?.ImageUrl
-                    };
-
-                    return Ok(userProfileVM);
                 }
+                return Unauthorized();
             }
             catch (Exception ex)
             {

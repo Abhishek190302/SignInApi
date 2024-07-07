@@ -11,10 +11,12 @@ namespace SignInApi.Controllers
     {
         private readonly CompanyDetailsRepository _companydetailsRepository;
         private readonly UserService _userService;
-        public CompanyDetailsController(UserService userService,CompanyDetailsRepository companydetailsRepository)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public CompanyDetailsController(UserService userService,CompanyDetailsRepository companydetailsRepository, IHttpContextAccessor httpContextAccessor)
         {
             _userService = userService;
             _companydetailsRepository = companydetailsRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpPost]
@@ -26,60 +28,68 @@ namespace SignInApi.Controllers
                 return BadRequest("All fields are compulsory.");
             }
 
-            var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
-            if (applicationUser != null)
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
             {
-                try
-                {
-                    string currentUserGuid = applicationUser.Id.ToString();
-                    var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
-                    bool recordNotFound = listing == null;
+                var userName = user.Identity.Name;
 
-                    if (recordNotFound)
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
+                {
+                    try
                     {
-                        listing = new Listing
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
+                        bool recordNotFound = listing == null;
+
+                        if (recordNotFound)
                         {
-                            OwnerGuid = currentUserGuid,
-                            CreatedDate = DateTime.UtcNow,
-                            CreatedTime = DateTime.UtcNow,
-                            IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
-                            Status = 0
-                        };
+                            listing = new Listing
+                            {
+                                OwnerGuid = currentUserGuid,
+                                CreatedDate = DateTime.UtcNow,
+                                CreatedTime = DateTime.UtcNow,
+                                IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
+                                Status = 0
+                            };
+                        }
+
+                        // Map properties from CompanyViewModel to Listing
+                        listing.CompanyName = companyVM.CompanyName;
+                        listing.BusinessCategory = companyVM.BusinessCategory;
+                        listing.NatureOfBusiness = companyVM.NatureOfBusiness;
+                        listing.YearOfEstablishment = companyVM.YearOfEstablishment;
+                        listing.NumberOfEmployees = companyVM.NumberOfEmployees;
+                        listing.Turnover = companyVM.Turnover;
+                        listing.GSTNumber = companyVM.GSTNumber;
+                        listing.Description = companyVM.Description;
+
+                        if (recordNotFound)
+                        {
+
+                            await _companydetailsRepository.AddListingAsync(listing);
+                            return Ok(new { Message = "Company Details created successfully", Listing = listing });
+                        }
+                        else
+                        {
+                            listing.CreatedDate = DateTime.UtcNow;
+                            listing.CreatedTime = DateTime.UtcNow;
+                            listing.IPAddress = HttpContext.Connection.RemoteIpAddress.ToString();
+                            listing.Status = 1;
+
+                            await _companydetailsRepository.UpdateListingAsync(listing);
+                            return Ok(new { Message = "Company Details updated successfully", Listing = listing });
+                        }
                     }
-
-                    // Map properties from CompanyViewModel to Listing
-                    listing.CompanyName = companyVM.CompanyName;
-                    listing.BusinessCategory = companyVM.BusinessCategory;
-                    listing.NatureOfBusiness = companyVM.NatureOfBusiness;
-                    listing.YearOfEstablishment = companyVM.YearOfEstablishment;
-                    listing.NumberOfEmployees = companyVM.NumberOfEmployees;
-                    listing.Turnover = companyVM.Turnover;
-                    listing.GSTNumber = companyVM.GSTNumber;
-                    listing.Description = companyVM.Description;
-
-                    if (recordNotFound)
+                    catch (Exception ex)
                     {
-
-                        await _companydetailsRepository.AddListingAsync(listing);
-                        return Ok(new { Message = "Company Details created successfully", Listing = listing });
-                    }
-                    else
-                    {
-                        listing.CreatedDate = DateTime.UtcNow;
-                        listing.CreatedTime = DateTime.UtcNow;
-                        listing.IPAddress = HttpContext.Connection.RemoteIpAddress.ToString();
-                        listing.Status = 1;
-
-                        await _companydetailsRepository.UpdateListingAsync(listing);
-                        return Ok(new { Message = "Company Details updated successfully", Listing = listing });
+                        return StatusCode(500, "Internal server error");
                     }
                 }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, "Internal server error");
-                }
+                return NotFound("User not found");
+
             }
-            return NotFound("User not found");
+            return Unauthorized();
         }
     }
 }
