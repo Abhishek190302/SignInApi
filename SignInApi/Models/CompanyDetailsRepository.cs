@@ -198,5 +198,26 @@ namespace SignInApi.Models
             }
             return listing;
         }
+
+        public List<string> GetDistinctKeywords(string OwnerGuid)
+        {
+            var keywords = new List<string>();
+
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                SqlCommand command = new SqlCommand("SELECT DISTINCT SeoKeyword FROM [dbo].[Keyword] WHERE OwnerGuid=@OwnerGuid", connection);
+                command.Parameters.AddWithValue("@OwnerGuid", OwnerGuid);
+                SqlDataAdapter adapter = new SqlDataAdapter(command);                   
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                foreach (DataRow row in dt.Rows)
+                {
+                    keywords.Add(row["SeoKeyword"].ToString());
+                } 
+            }
+            return keywords;
+        }
     }
 }

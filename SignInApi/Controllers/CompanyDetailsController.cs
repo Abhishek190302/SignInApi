@@ -64,11 +64,12 @@ namespace SignInApi.Controllers
                         listing.GSTNumber = companyVM.GSTNumber;
                         listing.Description = companyVM.Description;
 
+                        var distinctKeywords = _companydetailsRepository.GetDistinctKeywords(currentUserGuid);
+
                         if (recordNotFound)
                         {
-
                             await _companydetailsRepository.AddListingAsync(listing);
-                            return Ok(new { Message = "Company Details created successfully", Listing = listing });
+                            return Ok(new { Message = "Company Details created successfully", Listing = listing, BussinessType = distinctKeywords });
                         }
                         else
                         {
@@ -78,7 +79,7 @@ namespace SignInApi.Controllers
                             listing.Status = 1;
 
                             await _companydetailsRepository.UpdateListingAsync(listing);
-                            return Ok(new { Message = "Company Details updated successfully", Listing = listing });
+                            return Ok(new { Message = "Company Details updated successfully", Listing = listing, BussinessType = distinctKeywords });
                         }
                     }
                     catch (Exception ex)

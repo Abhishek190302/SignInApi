@@ -39,8 +39,6 @@ namespace SignInApi.Controllers
                 var user = response.User; // Ensure this is an ApplicationUsers object
                 var token = _tokenService.GenerateToken(user);
                 return Ok(new { Token = token, RedirectToUrl = response.RedirectToUrl });
-
-                //return Ok(response);
             }
 
             return Unauthorized(response);
@@ -84,7 +82,7 @@ namespace SignInApi.Controllers
                     {
                         var userProfile = await GetProfileByOwnerGuid(usr.Id);
                         errorResponse.RedirectToUrl = userProfile == null ? "/MyAccount/UserProfile" :
-                            !userProfile.IsProfileCompleted ? "/MyAccount/ProfileInfo" : "/";
+                        !userProfile.IsProfileCompleted ? "/MyAccount/ProfileInfo" : "/";
                         errorResponse.StatusCode = Constantss.Success;
                         errorResponse.User = usr; // Include user details in the response
                     }

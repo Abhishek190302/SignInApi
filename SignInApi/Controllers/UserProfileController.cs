@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using SignInApi.Models;
+using System.Data;
 using System.Data.SqlClient;
 using System.Security.Claims;
 
@@ -18,7 +19,6 @@ namespace SignInApi.Controllers
         {
             _connectionString = configuration.GetConnectionString("MimUser");
             _httpContextAccessor = httpContextAccessor;
-
         }
 
         [HttpGet]
@@ -74,20 +74,21 @@ namespace SignInApi.Controllers
         {
             var command = new SqlCommand("SELECT Id, Email, PhoneNumber, IsVendor FROM [dbo].[AspNetUsers] WHERE UserName = @UserName", connection);
             command.Parameters.AddWithValue("@UserName", userName);
-
-            using (var reader = await command.ExecuteReaderAsync())
+            var dt = new DataTable();
+            var da = new SqlDataAdapter(command);
+            da.Fill(dt);
+            if (dt.Rows.Count > 0)
             {
-                if (await reader.ReadAsync())
+                var row = dt.Rows[0];
+                return new ApplicationUserRequest
                 {
-                    return new ApplicationUserRequest
-                    {
-                        Id = reader["Id"].ToString(),
-                        Email = reader["Email"].ToString(),
-                        PhoneNumber = reader["PhoneNumber"].ToString(),
-                        IsVendor = Convert.ToBoolean(reader["IsVendor"])
-                    };
-                }
+                    Id = row["Id"].ToString(),
+                    Email = row["Email"].ToString(),
+                    PhoneNumber = row["PhoneNumber"].ToString(),
+                    IsVendor = Convert.ToBoolean(row["IsVendor"])
+                };
             }
+
             return null;
         }
 
@@ -95,20 +96,21 @@ namespace SignInApi.Controllers
         {
             var command = new SqlCommand("SELECT Name, LastName, ImageUrl, Gender FROM [dbo].[UserProfile] WHERE OwnerGuid = @OwnerGuid", connection);
             command.Parameters.AddWithValue("@OwnerGuid", ownerGuid);
-
-            using (var reader = await command.ExecuteReaderAsync())
+            var dt = new DataTable();
+            var da = new SqlDataAdapter(command);
+            da.Fill(dt);
+            if (dt.Rows.Count > 0)
             {
-                if (await reader.ReadAsync())
+                var row = dt.Rows[0];
+                return new UserProfileRequest
                 {
-                    return new UserProfileRequest
-                    {
-                        Name = reader["Name"].ToString(),
-                        LastName = reader["LastName"].ToString(),
-                        ImageUrl = reader["ImageUrl"].ToString(),
-                        Gender = reader["Gender"].ToString()
-                    };
-                }
+                    Name = row["Name"].ToString(),
+                    LastName = row["LastName"].ToString(),
+                    ImageUrl = row["ImageUrl"].ToString(),
+                    Gender = row["Gender"].ToString()
+                };
             }
+
             return null;
         }
     }

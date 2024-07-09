@@ -26,7 +26,6 @@ namespace SignInApi.Controllers
         [Route("AddOrUpdateCommunication")]
         public async Task<IActionResult> AddOrUpdateCommunication(CommunicationViewModel communicationVM)
         {
-
             var user = _httpContextAccessor.HttpContext.User;
             if (user.Identity.IsAuthenticated)
             {
@@ -63,7 +62,6 @@ namespace SignInApi.Controllers
                             communication.TelephoneSecond = communicationVM.RegisterMobile;
                             communication.TollFree = communicationVM.Tollfree;
 
-
                             if (recordNotFound)
                             {
                                 await _communicationRepository.AddCommunicationAsync(communication);
@@ -82,10 +80,8 @@ namespace SignInApi.Controllers
                     }
                 }
                 return NotFound("User not found");
-
             }
             return Unauthorized();
-
         }
     }
 }
