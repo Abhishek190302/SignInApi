@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -133,7 +134,6 @@ namespace SignInApi.Controllers
                 if (con.State == ConnectionState.Closed) { con.Open(); }
                 SqlCommand cmd = new SqlCommand("usp_Verifymobile", con);
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@id", "fa4eb177-e04c-4r99-8acb-13aae66e87ac");
                 cmd.Parameters.AddWithValue("@mobile", request.Mobile);
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
@@ -177,6 +177,9 @@ namespace SignInApi.Controllers
         [Route("VerifyOtpFogotpassword")]
         public IActionResult VerifyOtpFogotpassword([FromBody] VerifyforgotpasswordRequest request)
         {
+            var hasher = new PasswordHasher<VerifyforgotpasswordRequest>();
+            request.Password = hasher.HashPassword(request, request.Password);
+
             var Token = Request.Headers["Authorization"].ToString();
 
             if (Token.Contains("12345abcde67890fghij12345klmno67890pqr"))
@@ -192,6 +195,7 @@ namespace SignInApi.Controllers
                 con.Close();
                 if (dt.Rows.Count > 0)
                 {
+                    var Id = dt.Rows[0]["Id"].ToString();
                     var verify = dt.Rows[0]["Otp"].ToString();
 
                     if (verify != null)
@@ -199,12 +203,12 @@ namespace SignInApi.Controllers
                         if (con.State == ConnectionState.Closed) { con.Open(); }
                         SqlCommand cmd1 = new SqlCommand("usp_updateForgotpassword", con);
                         cmd1.CommandType = CommandType.StoredProcedure;
-                        cmd1.Parameters.AddWithValue("@id", "fa4eb177-e04c-4r99-8acb-13aae66e87ac");
+                        cmd1.Parameters.AddWithValue("@id", Id);
                         cmd1.Parameters.AddWithValue("@password", request.Password);
                         cmd1.Parameters.AddWithValue("@confirmpassword", request.ConfirmPassword);
                         cmd1.ExecuteNonQuery();
                         con.Close();
-                        return Ok(new ForgotpasswordResponse { Message = "Password Update Sucessfully..." });
+                        return Ok(new { Message = "Password Update Sucessfully...", Response = request });
                     }
                     else
                     {

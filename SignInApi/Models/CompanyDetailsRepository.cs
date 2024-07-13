@@ -106,7 +106,6 @@ namespace SignInApi.Models
                     throw;
                 }
             }
-            
         }
 
         public async Task<Listing> AddListingAsync(Listing listing)

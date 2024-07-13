@@ -24,12 +24,12 @@ namespace SignInApi.Controllers
         [Route("CreateSocialLink")]
         public async Task<IActionResult> CreateSocialLink(SocialNetworkViewModel socialnetworkVM)
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -79,8 +79,8 @@ namespace SignInApi.Controllers
                 }
                 return NotFound("User not found");
 
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
     }
 }

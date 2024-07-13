@@ -27,19 +27,19 @@ namespace SignInApi.Controllers
         {   
             try
             {
-                var user = _httpContextAccessor.HttpContext.User;
-                if (user.Identity.IsAuthenticated)
-                {
-                    var userName = user.Identity.Name;
+                //var user = _httpContextAccessor.HttpContext.User;
+                //if (user.Identity.IsAuthenticated)
+                //{
+                //    var userName = user.Identity.Name;
 
-                    var applicationUser = await _userService.GetUserByUserName(userName);
-                    if (applicationUser != null)
-                    {
+                //    var applicationUser = await _userService.GetUserByUserName(userName);
+                //    if (applicationUser != null)
+                //    {
                         var listings = await _listingService.GetListings();
                         return Ok(listings);
-                    }
-                }
-                return Ok();
+                //    }
+                //}
+                //return Ok();
             }
             catch (Exception ex)
             {

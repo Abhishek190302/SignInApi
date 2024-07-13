@@ -32,12 +32,12 @@ namespace SignInApi.Controllers
         [Route("UploadLogoImage")]
         public async Task<IActionResult> UploadLogoImage(IFormFile file)
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -78,20 +78,20 @@ namespace SignInApi.Controllers
                     }
                 }
                 return NotFound("User not found");
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
 
         [HttpPost]
         [Route("UploadOwnerImage")]
         public async Task<IActionResult> UploadOwnerImage([FromForm] OwnerImageModel model)
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -220,20 +220,20 @@ namespace SignInApi.Controllers
                     }
                 }
                 return NotFound("User not found");
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
 
         [HttpPost]
         [Route("UploadGalleryImage")]
         public async Task<IActionResult> UploadGalleryImage([FromForm] GalleryImage galleryImage )
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -275,20 +275,20 @@ namespace SignInApi.Controllers
                     }
                 }
                 return NotFound("User not found");
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
 
         [HttpPost]
         [Route("UploadBannerImage")]
         public async Task<IActionResult> UploadBannerImage([FromForm] GalleryImage galleryImage)
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -331,8 +331,8 @@ namespace SignInApi.Controllers
                 }
                 return NotFound("User not found");
 
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
 
 
@@ -340,12 +340,12 @@ namespace SignInApi.Controllers
         [Route("UploadCertificateImage")]
         public async Task<IActionResult> UploadCertificateImage([FromForm] GalleryImage galleryImage)
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -388,20 +388,20 @@ namespace SignInApi.Controllers
                 }
                 return NotFound("User not found");
 
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
 
         [HttpPost]
         [Route("UploadClientImage")]
         public async Task<IActionResult> UploadClientImage([FromForm] GalleryImage galleryImage)
         {
-            var user = _httpContextAccessor.HttpContext.User;
-            if (user.Identity.IsAuthenticated)
-            {
-                var userName = user.Identity.Name;
+            //var user = _httpContextAccessor.HttpContext.User;
+            //if (user.Identity.IsAuthenticated)
+            //{
+            //    var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName(userName);
+                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
                 if (applicationUser != null)
                 {
                     try
@@ -443,8 +443,8 @@ namespace SignInApi.Controllers
                     }
                 }
                 return NotFound("User not found");
-            }
-            return Unauthorized();
+            //}
+            //return Unauthorized();
         }
     }
 }
