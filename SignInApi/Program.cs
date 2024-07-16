@@ -34,6 +34,7 @@ builder.Services.AddTransient<WorkingHoursRepository>();
 builder.Services.AddTransient<PaymentModeRepository>();
 builder.Services.AddTransient<SocialNetworkRepository>();
 builder.Services.AddTransient<KeywordRepository>();
+builder.Services.AddTransient<ListingEnquiryService>();
 builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
 

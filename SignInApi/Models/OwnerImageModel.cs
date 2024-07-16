@@ -6,5 +6,7 @@
         public string LastName { get; set; }
         public string Designation { get; set; }
         public IFormFile File { get; set; }
+        public int CountryID { get; set; }
+        public int StateID { get; set; }
     }
 }
