@@ -2,20 +2,22 @@
 {
     public class WorkingHoursViewModel
     {
-        public TimeSpan MondayFrom { get; set; }
-        public TimeSpan MondayTo { get; set; }
-        public TimeSpan TuesdayFrom { get; set; }
-        public TimeSpan TuesdayTo { get; set; }
-        public TimeSpan WednesdayFrom { get; set; }
-        public TimeSpan WednesdayTo { get; set; }
-        public TimeSpan ThursdayFrom { get; set; }
-        public TimeSpan ThursdayTo { get; set; }
-        public TimeSpan FridayFrom { get; set; }
-        public TimeSpan FridayTo { get; set; }
-        public TimeSpan SaturdayFrom { get; set; }
-        public TimeSpan SaturdayTo { get; set; }
-        public TimeSpan SundayFrom { get; set; }
-        public TimeSpan SundayTo { get; set; }
+
+
+        public string MondayFrom { get; set; }
+        public string MondayTo { get; set; }
+        public string TuesdayFrom { get; set; }
+        public string TuesdayTo { get; set; }
+        public string WednesdayFrom { get; set; }
+        public string WednesdayTo { get; set; }
+        public string ThursdayFrom { get; set; }
+        public string ThursdayTo { get; set; }
+        public string FridayFrom { get; set; }
+        public string FridayTo { get; set; }
+        public string SaturdayFrom { get; set; }
+        public string SaturdayTo { get; set; }
+        public string SundayFrom { get; set; }
+        public string SundayTo { get; set; }
         public bool SaturdayHoliday { get; set; }
         public bool SundayHoliday { get; set; }
     }

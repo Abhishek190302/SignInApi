@@ -51,20 +51,20 @@ namespace SignInApi.Controllers
                             }
 
                             // Map properties from WorkingHoursViewModel to WorkingHours
-                            workinghours.MondayFrom = CombineDateAndTime(workinghoursVM.MondayFrom);
-                            workinghours.MondayTo = CombineDateAndTime(workinghoursVM.MondayTo);
-                            workinghours.TuesdayFrom = CombineDateAndTime(workinghoursVM.TuesdayFrom);
-                            workinghours.TuesdayTo = CombineDateAndTime(workinghoursVM.TuesdayTo);
-                            workinghours.WednesdayFrom = CombineDateAndTime(workinghoursVM.WednesdayFrom);
-                            workinghours.WednesdayTo = CombineDateAndTime(workinghoursVM.WednesdayTo);
-                            workinghours.ThursdayFrom = CombineDateAndTime(workinghoursVM.ThursdayFrom);
-                            workinghours.ThursdayTo = CombineDateAndTime(workinghoursVM.ThursdayTo);
-                            workinghours.FridayFrom = CombineDateAndTime(workinghoursVM.FridayFrom);
-                            workinghours.FridayTo = CombineDateAndTime(workinghoursVM.FridayTo);
-                            workinghours.SaturdayFrom = CombineDateAndTime(workinghoursVM.SaturdayFrom);
-                            workinghours.SaturdayTo = CombineDateAndTime(workinghoursVM.SaturdayTo);
-                            workinghours.SundayFrom = CombineDateAndTime(workinghoursVM.SundayFrom);
-                            workinghours.SundayTo = CombineDateAndTime(workinghoursVM.SundayTo);
+                            workinghours.MondayFrom = Convert.ToDateTime(workinghoursVM.MondayFrom);
+                            workinghours.MondayTo = Convert.ToDateTime(workinghoursVM.MondayTo);
+                            workinghours.TuesdayFrom = Convert.ToDateTime(workinghoursVM.TuesdayFrom);
+                            workinghours.TuesdayTo = Convert.ToDateTime(workinghoursVM.TuesdayTo);
+                            workinghours.WednesdayFrom = Convert.ToDateTime(workinghoursVM.WednesdayFrom);
+                            workinghours.WednesdayTo = Convert.ToDateTime(workinghoursVM.WednesdayTo);
+                            workinghours.ThursdayFrom = Convert.ToDateTime(workinghoursVM.ThursdayFrom);
+                            workinghours.ThursdayTo = Convert.ToDateTime(workinghoursVM.ThursdayTo);
+                            workinghours.FridayFrom = Convert.ToDateTime(workinghoursVM.FridayFrom);
+                            workinghours.FridayTo = Convert.ToDateTime(workinghoursVM.FridayTo);
+                            workinghours.SaturdayFrom = Convert.ToDateTime(workinghoursVM.SaturdayFrom);
+                            workinghours.SaturdayTo = Convert.ToDateTime(workinghoursVM.SaturdayTo);
+                            workinghours.SundayFrom = Convert.ToDateTime(workinghoursVM.SundayFrom);
+                            workinghours.SundayTo = Convert.ToDateTime(workinghoursVM.SundayTo);
                             workinghours.SaturdayHoliday = workinghoursVM.SaturdayHoliday;
                             workinghours.SundayHoliday = workinghoursVM.SundayHoliday;
 

@@ -35,6 +35,8 @@ builder.Services.AddTransient<PaymentModeRepository>();
 builder.Services.AddTransient<SocialNetworkRepository>();
 builder.Services.AddTransient<KeywordRepository>();
 builder.Services.AddTransient<ListingEnquiryService>();
+builder.Services.AddTransient<IUserNewProfileService, UserNewProfileService>();
+
 builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
 
