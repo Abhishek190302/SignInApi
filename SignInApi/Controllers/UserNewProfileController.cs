@@ -23,56 +23,63 @@ namespace SignInApi.Controllers
         [Route("CreateOrUpdateProfile")]
         public async Task<IActionResult> CreateOrUpdateProfile([FromForm] UserNewProfileVM userProfileVM)
         {
-            var applicationUser = await _userService.GetUserByUserName("web@teb.com");
-            if (applicationUser != null)
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
             {
-                try
-                {
-                    string currentUserGuid = applicationUser.Id.ToString();
-                    var userProfile = await _userNewProfileService.GetProfileByOwnerGuid(currentUserGuid);
-                    if (userProfile == null)
-                    {
-                        // Create new profile
-                        userProfile = new UserNewProfile
-                        {
-                            OwnerGuid = currentUserGuid,
-                            IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
-                            FirstName = userProfileVM.FirstName,
-                            LastName = userProfileVM.LastName,
-                            Gender = userProfileVM.Gender,
-                            CreatedDate = DateTime.UtcNow,
-                            TimeZoneOfCountry = userProfileVM.TimeZoneOfCountry,
-                        };
+                var userName = user.Identity.Name;
 
-                        var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
-                        using (var stream = new FileStream(imagePath, FileMode.Create))
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
+                {
+                    try
+                    {
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var userProfile = await _userNewProfileService.GetProfileByOwnerGuid(currentUserGuid);
+                        if (userProfile == null)
                         {
-                            await userProfileVM.File.CopyToAsync(stream);
+                            // Create new profile
+                            userProfile = new UserNewProfile
+                            {
+                                OwnerGuid = currentUserGuid,
+                                IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
+                                FirstName = userProfileVM.FirstName,
+                                LastName = userProfileVM.LastName,
+                                Gender = userProfileVM.Gender,
+                                CreatedDate = DateTime.UtcNow,
+                                TimeZoneOfCountry = userProfileVM.TimeZoneOfCountry,
+                            };
+
+                            var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
+                            using (var stream = new FileStream(imagePath, FileMode.Create))
+                            {
+                                await userProfileVM.File.CopyToAsync(stream);
+                            }
+                            var imageUrl = $"/images/logos/" + currentUserGuid + "/" + userProfileVM.File.FileName + "";
+
+                            await _userNewProfileService.AddUserProfile(userProfile, imageUrl);
+                            return Ok("Your profile created successfully.");
                         }
-                        var imageUrl = $"/images/logos/" + currentUserGuid + "/" + userProfileVM.File.FileName + "";
+                        else
+                        {
+                            // Update existing profile
+                            userProfile.FirstName = userProfileVM.FirstName;
+                            userProfile.LastName = userProfileVM.LastName;
+                            userProfile.Gender = userProfileVM.Gender;
+                            userProfile.UpdatedDate = DateTime.UtcNow;
 
-                        await _userNewProfileService.AddUserProfile(userProfile, imageUrl);
-                        return Ok("Your profile created successfully.");
+                            await _userNewProfileService.UpdateUserProfile(userProfile);
+                            return Ok("Your profile updated successfully.");
+                        }
+
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        // Update existing profile
-                        userProfile.FirstName = userProfileVM.FirstName;
-                        userProfile.LastName = userProfileVM.LastName;
-                        userProfile.Gender = userProfileVM.Gender;
-                        userProfile.UpdatedDate = DateTime.UtcNow;
-
-                        await _userNewProfileService.UpdateUserProfile(userProfile);
-                        return Ok("Your profile updated successfully.");
+                        return StatusCode(500, ex.Message);
                     }
-
                 }
-                catch(Exception ex)
-                {
-                    return StatusCode(500, ex.Message);
-                }
+                return NotFound("User not found");
             }
-            return NotFound("User not found");
+            return Unauthorized();
         }
     }
 }

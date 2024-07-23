@@ -26,121 +26,120 @@ namespace SignInApi.Controllers
         [Route("ManageKeywords")]
         public async Task<IActionResult> ManageKeywords([FromBody] KeywordActionRequest request)
         {
-            //var user = _httpContextAccessor.HttpContext.User;
-            //if (user.Identity.IsAuthenticated)
-            //{
-            //    var userName = user.Identity.Name;
-
-            var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
-            if (applicationUser != null)
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
             {
-                try
+                var userName = user.Identity.Name;
+
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
                 {
-                    string currentUserGuid = applicationUser.Id.ToString();
-                    var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
-                    if (listing != null)
+                    try
                     {
-                        // Initialize currentKeywords with existing keywords from the database for this listing
-                        var currentKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
-
-                        switch (request.Action.ToLower())
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
+                        if (listing != null)
                         {
-                            case "add":
-                                if (string.IsNullOrWhiteSpace(request.Keyword))
-                                {
-                                    return BadRequest("Keyword cannot be empty");
-                                }
+                            // Initialize currentKeywords with existing keywords from the database for this listing
+                            var currentKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
 
-                                if (currentKeywords.Any(k => k.SeoKeyword == request.Keyword) || keywordList.Any(k => k.SeoKeyword == request.Keyword))
-                                {
-                                    return Conflict($"{request.Keyword} already exists in the Keyword listing");
-                                }
-
-                                var keywordToAdd = new Keyword
-                                {
-                                    ListingID = listing.Listingid,
-                                    OwnerGuid = currentUserGuid,
-                                    SeoKeyword = request.Keyword
-                                };
-
-                                // Add keyword to the static keyword list
-                                keywordList.Add(keywordToAdd);
-                                return Ok("Keyword added to the list successfully");
-
-                            case "remove":
-                                if (string.IsNullOrWhiteSpace(request.Keyword))
-                                {
-                                    return BadRequest("Keyword cannot be empty");
-                                }
-
-                                // Find the keyword in the current list
-                                var keywordToRemove = currentKeywords.FirstOrDefault(k => k.SeoKeyword == request.Keyword);
-                                if (keywordToRemove == null)
-                                {
-                                    // Also check the static keyword list
-                                    keywordToRemove = keywordList.FirstOrDefault(k => k.SeoKeyword == request.Keyword);
-                                    if (keywordToRemove == null)
+                            switch (request.Action.ToLower())
+                            {
+                                case "add":
+                                    if (string.IsNullOrWhiteSpace(request.Keyword))
                                     {
-                                        return NotFound($"Keyword '{request.Keyword}' not found");
+                                        return BadRequest("Keyword cannot be empty");
                                     }
 
-                                    // Remove the keyword from the static list
-                                    keywordList.Remove(keywordToRemove);
-                                }
-                                else
-                                {
-                                    // Remove the keyword from the database
-                                    await _keywordRepository.RemoveKeywordsAsync(new List<Keyword> { keywordToRemove });
-                                }
+                                    if (currentKeywords.Any(k => k.SeoKeyword == request.Keyword) || keywordList.Any(k => k.SeoKeyword == request.Keyword))
+                                    {
+                                        return Conflict($"{request.Keyword} already exists in the Keyword listing");
+                                    }
 
-                                return Ok(new
-                                {
-                                    Message = "Keyword removed successfully",
-                                    Keywords = currentKeywords
-                                });
+                                    var keywordToAdd = new Keyword
+                                    {
+                                        ListingID = listing.Listingid,
+                                        OwnerGuid = currentUserGuid,
+                                        SeoKeyword = request.Keyword
+                                    };
 
-                            case "save":
-                                if (keywordList.Count == 0)
-                                {
-                                    return BadRequest("No new keywords to save");
-                                }
+                                    // Add keyword to the static keyword list
+                                    keywordList.Add(keywordToAdd);
+                                    return Ok("Keyword added to the list successfully");
 
-                                // Save only new keywords to the database
-                                await _keywordRepository.SaveKeywordsAsync(keywordList);
-                                keywordList.Clear(); // Clear the list after saving
+                                case "remove":
+                                    if (string.IsNullOrWhiteSpace(request.Keyword))
+                                    {
+                                        return BadRequest("Keyword cannot be empty");
+                                    }
 
-                                // Retrieve the updated list of keywords from the database
-                                var updatedKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
+                                    // Find the keyword in the current list
+                                    var keywordToRemove = currentKeywords.FirstOrDefault(k => k.SeoKeyword == request.Keyword);
+                                    if (keywordToRemove == null)
+                                    {
+                                        // Also check the static keyword list
+                                        keywordToRemove = keywordList.FirstOrDefault(k => k.SeoKeyword == request.Keyword);
+                                        if (keywordToRemove == null)
+                                        {
+                                            return NotFound($"Keyword '{request.Keyword}' not found");
+                                        }
 
-                                return Ok(new
-                                {
-                                    Message = "Keywords saved successfully",
-                                    Keywords = updatedKeywords
-                                });
+                                        // Remove the keyword from the static list
+                                        keywordList.Remove(keywordToRemove);
+                                    }
+                                    else
+                                    {
+                                        // Remove the keyword from the database
+                                        await _keywordRepository.RemoveKeywordsAsync(new List<Keyword> { keywordToRemove });
+                                    }
 
-                            case "fetch":
-                                var fetchedKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
-                                return Ok(new
-                                {
-                                    Message = "Keywords fetched successfully",
-                                    Keywords = fetchedKeywords
-                                });
+                                    return Ok(new
+                                    {
+                                        Message = "Keyword removed successfully",
+                                        Keywords = currentKeywords
+                                    });
 
-                            default:
-                                return BadRequest("Invalid action specified");
+                                case "save":
+                                    if (keywordList.Count == 0)
+                                    {
+                                        return BadRequest("No new keywords to save");
+                                    }
+
+                                    // Save only new keywords to the database
+                                    await _keywordRepository.SaveKeywordsAsync(keywordList);
+                                    keywordList.Clear(); // Clear the list after saving
+
+                                    // Retrieve the updated list of keywords from the database
+                                    var updatedKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
+
+                                    return Ok(new
+                                    {
+                                        Message = "Keywords saved successfully",
+                                        Keywords = updatedKeywords
+                                    });
+
+                                case "fetch":
+                                    var fetchedKeywords = await _keywordRepository.GetKeywordsByListingIdAsync(listing.Listingid);
+                                    return Ok(new
+                                    {
+                                        Message = "Keywords fetched successfully",
+                                        Keywords = fetchedKeywords
+                                    });
+
+                                default:
+                                    return BadRequest("Invalid action specified");
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        // Log the exception if you have a logging mechanism
+                        return StatusCode(500, $"Internal server error: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    // Log the exception if you have a logging mechanism
-                    return StatusCode(500, $"Internal server error: {ex.Message}");
-                }
+                return NotFound("User not found");
             }
-            return NotFound("User not found");
-
-            //}
-            //return Unauthorized();
+            return Unauthorized();
         }
     }
 }

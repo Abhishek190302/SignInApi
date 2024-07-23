@@ -24,12 +24,12 @@ namespace SignInApi.Controllers
         [Route("CreatePaymentMode")]
         public async Task<IActionResult> CreatePaymentMode([FromBody] PaymentModeViewModel paymentmodeVM)
         {
-            //var user = _httpContextAccessor.HttpContext.User;
-            //if (user.Identity.IsAuthenticated)
-            //{
-            //    var userName = user.Identity.Name;
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
+            {
+                var userName = user.Identity.Name;
 
-                var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
+                var applicationUser = await _userService.GetUserByUserName(userName);
                 if (applicationUser != null)
                 {
                     try
@@ -94,10 +94,8 @@ namespace SignInApi.Controllers
                     }
                 }
                 return NotFound("User not found");
-
-
-            //}
-            //return Unauthorized();
+            }
+            return Unauthorized();
         }
     }
 }

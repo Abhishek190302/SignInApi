@@ -8,7 +8,7 @@ namespace SignInApi.Models
 
         public CategoryServices(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("MimCategory");
+            _connectionString = configuration.GetConnectionString("MimCategories");
         }
 
         public async Task<CategoryResponse> GetCategoriesForWebDevelopment()

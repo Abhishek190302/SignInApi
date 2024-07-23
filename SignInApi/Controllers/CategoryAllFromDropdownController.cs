@@ -119,63 +119,70 @@ namespace SignInApi.Controllers
             var categories = await _categoryRepository.GetFirstCategoriesAsync();
             object response = new { AllCategories = categories };
 
-            var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
-            if (applicationUser != null)
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
             {
-                try
+                var userName = user.Identity.Name;
+
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
                 {
-                    string currentUserGuid = applicationUser.Id.ToString();
-                    var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
-                    if (listing != null)
+                    try
                     {
-                        var category = await _categoryRepository.GetCategoryByListingIdAsync(listing.Listingid);
-                        bool recordNotFound = category == null;
-
-                        if (recordNotFound)
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
+                        if (listing != null)
                         {
-                            category = new Categories
+                            var category = await _categoryRepository.GetCategoryByListingIdAsync(listing.Listingid);
+                            bool recordNotFound = category == null;
+
+                            if (recordNotFound)
                             {
-                                OwnerGuid = currentUserGuid,
-                                ListingID = listing.Listingid,
-                                IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
-                                FirstCategoryID = categoryVM.FirstCategoryID,
-                                SecondCategoryID = categoryVM.SecondCategoryID,
-                                ThirdCategoryID = categoryVM.ThirdCategoryID,
-                                FourthCategoryID = categoryVM.FourthCategoryID,
-                                FifthCategoryID = categoryVM.FifthCategoryID,
-                                SixthCategoryID = categoryVM.SixthCategoryID
-                            };
-                        }
-                        else
-                        {
-                            category.FirstCategoryID = categoryVM.FirstCategoryID != 0 ? categoryVM.FirstCategoryID : category.FirstCategoryID;
-                            category.SecondCategoryID = categoryVM.SecondCategoryID != 0 ? categoryVM.SecondCategoryID : category.SecondCategoryID;
-                            category.ThirdCategoryID = !string.IsNullOrEmpty(categoryVM.ThirdCategoryID) ? categoryVM.ThirdCategoryID : category.ThirdCategoryID;
-                            category.FourthCategoryID = !string.IsNullOrEmpty(categoryVM.FourthCategoryID) ? categoryVM.FourthCategoryID : category.FourthCategoryID;
-                            category.FifthCategoryID = categoryVM.FifthCategoryID != null ? categoryVM.FifthCategoryID : category.FifthCategoryID;
-                            category.SixthCategoryID = categoryVM.SixthCategoryID != null ? categoryVM.SixthCategoryID : category.SixthCategoryID;
+                                category = new Categories
+                                {
+                                    OwnerGuid = currentUserGuid,
+                                    ListingID = listing.Listingid,
+                                    IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
+                                    FirstCategoryID = categoryVM.FirstCategoryID,
+                                    SecondCategoryID = categoryVM.SecondCategoryID,
+                                    ThirdCategoryID = categoryVM.ThirdCategoryID,
+                                    FourthCategoryID = categoryVM.FourthCategoryID,
+                                    FifthCategoryID = categoryVM.FifthCategoryID,
+                                    SixthCategoryID = categoryVM.SixthCategoryID
+                                };
+                            }
+                            else
+                            {
+                                category.FirstCategoryID = categoryVM.FirstCategoryID != 0 ? categoryVM.FirstCategoryID : category.FirstCategoryID;
+                                category.SecondCategoryID = categoryVM.SecondCategoryID != 0 ? categoryVM.SecondCategoryID : category.SecondCategoryID;
+                                category.ThirdCategoryID = !string.IsNullOrEmpty(categoryVM.ThirdCategoryID) ? categoryVM.ThirdCategoryID : category.ThirdCategoryID;
+                                category.FourthCategoryID = !string.IsNullOrEmpty(categoryVM.FourthCategoryID) ? categoryVM.FourthCategoryID : category.FourthCategoryID;
+                                category.FifthCategoryID = categoryVM.FifthCategoryID != null ? categoryVM.FifthCategoryID : category.FifthCategoryID;
+                                category.SixthCategoryID = categoryVM.SixthCategoryID != null ? categoryVM.SixthCategoryID : category.SixthCategoryID;
+                            }
+
+                            if (recordNotFound)
+                            {
+                                await _categoryRepository.CreateCategories(category);
+                                response = new { Message = "Category Details created successfully", Category = category, AllCategories = categories };
+                            }
+                            else
+                            {
+                                await _categoryRepository.UpdateCategories(category);
+                                response = new { Message = "Category Details Updated successfully", Category = category, AllCategories = categories };
+                            }
                         }
 
-                        if (recordNotFound)
-                        {
-                            await _categoryRepository.CreateCategories(category);
-                            response = new { Message = "Category Details created successfully", Category = category, AllCategories = categories };
-                        }
-                        else
-                        {
-                            await _categoryRepository.UpdateCategories(category);
-                            response = new { Message = "Category Details Updated successfully", Category = category, AllCategories = categories };
-                        }
+                        return Ok(response);
                     }
-
-                    return Ok(response);
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, "Internal server error");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, "Internal server error");
-                }
+                return NotFound("User not found");
             }
-            return NotFound("User not found");
+            return Unauthorized();
         }
     }
 }

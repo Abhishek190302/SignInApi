@@ -37,6 +37,9 @@ builder.Services.AddTransient<KeywordRepository>();
 builder.Services.AddTransient<ListingEnquiryService>();
 builder.Services.AddTransient<IUserNewProfileService, UserNewProfileService>();
 
+builder.Services.AddTransient<IUserProfileService, UserProfileService>();
+builder.Services.AddTransient<ISharedService, SharedService>();
+
 builder.Services.AddTransient<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 //Configure Cors
 

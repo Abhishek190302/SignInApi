@@ -10,7 +10,7 @@ namespace SignInApi.Models
         private readonly string _connectionStringListing;
         public CategoryRepository(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("MimCategory");
+            _connectionString = configuration.GetConnectionString("MimCategories");
             _connectionStringListing = configuration.GetConnectionString("MimListing");
         }
 

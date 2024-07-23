@@ -26,17 +26,7 @@ namespace SignInApi.Controllers
         public async Task<ActionResult<IndexVM>> GetCategories()
         {
             var indexVM = new IndexVM();
-            //var user = _httpContextAccessor.HttpContext.User;
-            //if (user.Identity.IsAuthenticated)
-            //{
-            //    var userName = user.Identity.Name;
-
-            //    var applicationUser = await _userService.GetUserByUserName(userName);
-            //    if (applicationUser != null)
-            //    {
-                    await _categoryService.GetCategoriesForIndexPageAsync(indexVM);                    
-            //    }
-            //}
+            await _categoryService.GetCategoriesForIndexPageAsync(indexVM);                    
             return Ok(indexVM);
         }
     }

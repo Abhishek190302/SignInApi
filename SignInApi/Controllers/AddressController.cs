@@ -119,67 +119,74 @@ namespace SignInApi.Controllers
             var countries = await _addressRepository.GetAddressDetails();
             object response = new { Countries = countries };
 
-            var applicationUser = await _userService.GetUserByUserName("web@jeb.com");
-            if (applicationUser != null)
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
             {
-                try
+                var userName = user.Identity.Name;
+
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
                 {
-                    string currentUserGuid = applicationUser.Id.ToString();
-                    var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
-                    if (listing != null)
+                    try
                     {
-                        var address = await _addressRepository.GetAddressByListingIdAsync(listing.Listingid);
-                        bool recordNotFound = address == null;
-
-                        var selectedCountry = countries.FirstOrDefault(c => c.CountryID == addressVM.CountryID);
-                        var selectedState = selectedCountry?.States.FirstOrDefault(s => s.StateID == addressVM.StateID);
-                        var selectedCity = selectedState?.Cities.FirstOrDefault(c => c.CityID == addressVM.CityID);
-                        var selectedAssembly = selectedCity?.Assemblies.FirstOrDefault(a => a.AssemblyID == addressVM.AssemblyID);
-                        var selectedPincode = selectedAssembly?.Pincodes.FirstOrDefault(p => p.PincodeID == addressVM.PincodeID);
-                        var selectedLocality = selectedPincode?.Localities.FirstOrDefault(l => l.LocalityID == addressVM.LocalityID);
-
-                        if (recordNotFound)
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
+                        if (listing != null)
                         {
-                            address = new Address
+                            var address = await _addressRepository.GetAddressByListingIdAsync(listing.Listingid);
+                            bool recordNotFound = address == null;
+
+                            var selectedCountry = countries.FirstOrDefault(c => c.CountryID == addressVM.CountryID);
+                            var selectedState = selectedCountry?.States.FirstOrDefault(s => s.StateID == addressVM.StateID);
+                            var selectedCity = selectedState?.Cities.FirstOrDefault(c => c.CityID == addressVM.CityID);
+                            var selectedAssembly = selectedCity?.Assemblies.FirstOrDefault(a => a.AssemblyID == addressVM.AssemblyID);
+                            var selectedPincode = selectedAssembly?.Pincodes.FirstOrDefault(p => p.PincodeID == addressVM.PincodeID);
+                            var selectedLocality = selectedPincode?.Localities.FirstOrDefault(l => l.LocalityID == addressVM.LocalityID);
+
+                            if (recordNotFound)
                             {
-                                OwnerGuid = currentUserGuid,
-                                ListingID = listing.Listingid,
-                                IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
-                                CountryID = selectedCountry?.CountryID ?? 0,
-                                StateID = selectedState?.StateID ?? 0,
-                                CityID = selectedCity?.CityID ?? 0,
-                                AssemblyID = selectedAssembly?.AssemblyID ?? 0,
-                                PincodeID = selectedPincode?.PincodeID ?? 0,
-                                LocalityID = selectedLocality?.LocalityID ?? 0,
-                                LocalAddress = addressVM.LocalAddress // Set as needed
-                            };
+                                address = new Address
+                                {
+                                    OwnerGuid = currentUserGuid,
+                                    ListingID = listing.Listingid,
+                                    IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
+                                    CountryID = selectedCountry?.CountryID ?? 0,
+                                    StateID = selectedState?.StateID ?? 0,
+                                    CityID = selectedCity?.CityID ?? 0,
+                                    AssemblyID = selectedAssembly?.AssemblyID ?? 0,
+                                    PincodeID = selectedPincode?.PincodeID ?? 0,
+                                    LocalityID = selectedLocality?.LocalityID ?? 0,
+                                    LocalAddress = addressVM.LocalAddress // Set as needed
+                                };
 
-                            await _addressRepository.CreateAddress(address);
-                            response = new { Message = "Address Details created successfully", Address = address, Country = countries };
+                                await _addressRepository.CreateAddress(address);
+                                response = new { Message = "Address Details created successfully", Address = address, Country = countries };
+                            }
+                            else
+                            {
+                                address.CountryID = selectedCountry?.CountryID ?? 0;
+                                address.StateID = selectedState?.StateID ?? 0;
+                                address.CityID = selectedCity?.CityID ?? 0;
+                                address.AssemblyID = selectedAssembly?.AssemblyID ?? 0;
+                                address.PincodeID = selectedPincode?.PincodeID ?? 0;
+                                address.LocalityID = selectedLocality?.LocalityID ?? 0;
+                                address.LocalAddress = addressVM.LocalAddress; // Set as needed
+
+                                await _addressRepository.UpdateAddress(address);
+                                response = new { Message = "Address Details Updated successfully", Address = address, Country = countries };
+                            }
+
+                            return Ok(response);
                         }
-                        else
-                        {
-                            address.CountryID = selectedCountry?.CountryID ?? 0;
-                            address.StateID = selectedState?.StateID ?? 0;
-                            address.CityID = selectedCity?.CityID ?? 0;
-                            address.AssemblyID = selectedAssembly?.AssemblyID ?? 0;
-                            address.PincodeID = selectedPincode?.PincodeID ?? 0;
-                            address.LocalityID = selectedLocality?.LocalityID ?? 0;
-                            address.LocalAddress = addressVM.LocalAddress; // Set as needed
-
-                            await _addressRepository.UpdateAddress(address);
-                            response = new { Message = "Address Details Updated successfully", Address = address, Country = countries };
-                        }
-
-                        return Ok(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, "Internal server error");
                     }
                 }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, "Internal server error");
-                }
+                return NotFound("User not found");
             }
-            return NotFound("User not found");
+            return Unauthorized();
         }
     }
 }

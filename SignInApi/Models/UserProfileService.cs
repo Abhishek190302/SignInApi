@@ -73,7 +73,7 @@ namespace SignInApi.Models
             }
         }
 
-        public async Task UpdateUserProfile(UserprofileUpdateVM userProfile)
+        public async Task UpdateUserProfile(UserprofileUpdateVM userProfile,string ownerguid)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
@@ -84,7 +84,7 @@ namespace SignInApi.Models
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    //cmd.Parameters.AddWithValue("@OwnerGuid", userProfile.UserId);
+                    cmd.Parameters.AddWithValue("@OwnerGuid", ownerguid);
                     cmd.Parameters.AddWithValue("@CountryID", userProfile.CountryID);
                     cmd.Parameters.AddWithValue("@StateID", userProfile.StateID);
                     cmd.Parameters.AddWithValue("@CityID", userProfile.CityID);

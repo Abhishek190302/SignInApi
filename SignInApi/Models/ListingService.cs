@@ -19,7 +19,7 @@ namespace SignInApi.Models
         public ListingService(IConfiguration configuration, ILogger<ListingService> logger)
         {
             _connectionString = configuration.GetConnectionString("MimListing");
-            _connectionStringCat = configuration.GetConnectionString("MimCategory");
+            _connectionStringCat = configuration.GetConnectionString("MimCategories");
             _connectionStringAudit = configuration.GetConnectionString("AuditTrail");
             _connectionStringMimshared = configuration.GetConnectionString("MimShared");
             _logger = logger;

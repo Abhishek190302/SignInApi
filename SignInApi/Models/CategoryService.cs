@@ -9,7 +9,7 @@ namespace SignInApi.Models
 
         public CategoryService(IConfiguration configuration)
         {           
-            _connectionString = configuration.GetConnectionString("MimCategory");
+            _connectionString = configuration.GetConnectionString("MimCategories");
         }
 
 
