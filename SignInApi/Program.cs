@@ -37,6 +37,7 @@ builder.Services.AddTransient<KeywordRepository>();
 builder.Services.AddTransient<ListingEnquiryService>();
 builder.Services.AddTransient<BinddetailsManagelistingRepository>();
 builder.Services.AddTransient<ImageuploadRepository>();
+builder.Services.AddTransient<DashboardRepository>();
 builder.Services.AddTransient<IUserNewProfileService, UserNewProfileService>();
 
 builder.Services.AddTransient<IUserProfileService, UserProfileService>();
