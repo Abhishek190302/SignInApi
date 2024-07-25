@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.SqlClient;
+using Twilio.Types;
 
 namespace SignInApi.Models
 {
@@ -30,6 +31,9 @@ namespace SignInApi.Models
                         {
                             Id = Guid.Parse(row["Id"].ToString()),
                             UserName = (string)row["UserName"],
+                            IsVendor = (bool)row["IsVendor"],
+                            PhoneNumber = (string)row["PhoneNumber"],
+                            Email = (string)row["Email"]
                             // Map other properties as needed
                         };
                     }

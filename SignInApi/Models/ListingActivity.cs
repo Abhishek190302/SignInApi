@@ -1,4 +1,6 @@
-﻿namespace SignInApi.Models
+﻿using Microsoft.VisualBasic;
+
+namespace SignInApi.Models
 {
     public class ListingActivity
     {

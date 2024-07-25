@@ -1,23 +1,18 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.VisualBasic;
 using SignInApi.Models;
-using System.Data.SqlClient;
-using System.Security.Claims;
 
 namespace SignInApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AllBookMarkController : ControllerBase
+    public class MyActivityController : ControllerBase
     {
         private readonly UserService _userService;
         private readonly DashboardRepository _dashboardRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly string _connectionString;
-        public AllBookMarkController(IConfiguration configuration, UserService userService, IHttpContextAccessor httpContextAccessor, DashboardRepository dashboardRepository)
+        public MyActivityController(IConfiguration configuration, UserService userService, IHttpContextAccessor httpContextAccessor, DashboardRepository dashboardRepository)
         {
             _connectionString = configuration.GetConnectionString("AuditTrail");
             _userService = userService;
@@ -26,8 +21,8 @@ namespace SignInApi.Controllers
         }
 
         [HttpGet]
-        [Route("GetUserAllMyBookmarks")]
-        public async Task<IActionResult> GetUserAllMyBookmarks()
+        [Route("MyActivityAllMyBookmarks")]
+        public async Task<IActionResult> MyActivityAllMyBookmarks()
         {
             try
             {
@@ -43,7 +38,7 @@ namespace SignInApi.Controllers
                         try
                         {
                             string currentUserGuid = applicationUser.Id.ToString();
-                            var listingActivityVMs = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Bookmark);
+                            var listingActivityVMs = await _dashboardRepository.GetOwneridActivityAsync(currentUserGuid, Constantss.Bookmark);
                             if (listingActivityVMs == null)
                             {
                                 return NotFound();
@@ -72,9 +67,8 @@ namespace SignInApi.Controllers
             }
         }
 
-
         [HttpGet]
-        [Route("GetUserAllMyLikes")]
+        [Route("MyActivityAllMyLikes")]
         public async Task<IActionResult> GetUserAllMyLikes()
         {
             try
@@ -90,7 +84,7 @@ namespace SignInApi.Controllers
                         try
                         {
                             string currentUserGuid = applicationUser.Id.ToString();
-                            var listingActivityVMs = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Like);
+                            var listingActivityVMs = await _dashboardRepository.GetOwneridActivityAsync(currentUserGuid, Constantss.Like);
                             if (listingActivityVMs == null)
                             {
                                 return NotFound();
@@ -120,7 +114,7 @@ namespace SignInApi.Controllers
         }
 
         [HttpGet]
-        [Route("GetUserAllMySubscribe")]
+        [Route("MyActivityAllMySubscribe")]
         public async Task<IActionResult> GetUserAllMySubscribe()
         {
             try
@@ -136,7 +130,7 @@ namespace SignInApi.Controllers
                         try
                         {
                             string currentUserGuid = applicationUser.Id.ToString();
-                            var listingActivityVMs = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Subscribe);
+                            var listingActivityVMs = await _dashboardRepository.GetOwneridActivityAsync(currentUserGuid, Constantss.Subscribe);
                             if (listingActivityVMs == null)
                             {
                                 return NotFound();
@@ -166,8 +160,8 @@ namespace SignInApi.Controllers
         }
 
         [HttpPost]
-        [Route("GetUserAllMyReviews")]
-        public async Task<IActionResult> GetUserAllMyReviews([FromBody] ReviewRequest reviewRequest)
+        [Route("MyActivityAllMyReviews")]
+        public async Task<IActionResult> MyActivityAllMyReviews([FromBody] ReviewRequest reviewRequest)
         {
             try
             {
@@ -184,7 +178,7 @@ namespace SignInApi.Controllers
                             string currentUserGuid = applicationUser.Id.ToString();
                             if (reviewRequest.Operation == "GetReviews")
                             {
-                                var reviews = await _dashboardRepository.GetReviewsByOwnerIdAsync(currentUserGuid);
+                                var reviews = await _dashboardRepository.GetReviewsByOwnerGuidIdAsync(currentUserGuid);
                                 return Ok(reviews);
                             }
                             else if (reviewRequest.Operation == "CreateReviewReply" || reviewRequest.Operation == "UpdateReviewReply")
