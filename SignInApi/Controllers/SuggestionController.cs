@@ -1,21 +1,20 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SignInApi.Models;
-using System.Data;
 using System.Data.SqlClient;
-using System.Reflection;
+using System.Data;
 
 namespace SignInApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ComplaintController : ControllerBase
+    public class SuggestionController : ControllerBase
     {
         private readonly UserService _userService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly string _connectionString;
         private readonly string _connectionAudit;
-        public ComplaintController(IConfiguration configuration, UserService userService, IHttpContextAccessor httpContextAccessor)
+        public SuggestionController(IConfiguration configuration, UserService userService, IHttpContextAccessor httpContextAccessor)
         {
             _userService = userService;
             _httpContextAccessor = httpContextAccessor;
@@ -24,10 +23,10 @@ namespace SignInApi.Controllers
         }
 
         [HttpPost]
-        [Route("AddComplaint")]
-        public async Task<IActionResult> AddComplaint([FromForm] ComplaintRequest request)
+        [Route("AddSuggestion")]
+        public async Task<IActionResult> AddSuggestion(SuggestionRequest request)
         {
-            if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Description) || request.File == null)
+            if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Suggestion))
             {
                 return BadRequest("All fields are compulsory.");
             }
@@ -47,39 +46,24 @@ namespace SignInApi.Controllers
                             string currentUserGuid = applicationUser.Id.ToString();
                             var userProfile = await GetProfileByOwnerGuid(currentUserGuid);
 
-
-                            if (request.File == null || request.File.Length == 0)
-                                return BadRequest("No file uploaded.");
-
-                            var imagePath = Path.Combine("wwwroot/images/logos", request.File.FileName);
-
-                            using (var stream = new FileStream(imagePath, FileMode.Create))
-                            {
-                                await request.File.CopyToAsync(stream);
-                            }
-
-                            var imageUrl = $"/images/logos/" + currentUserGuid + "/" + request.File.FileName + "";
-
-                            var complaint = new Complaint
+                            var suggestion = new Suggestion
                             {
                                 OwnerGuid = currentUserGuid,
                                 Mobile = applicationUser.PhoneNumber,
                                 Email = applicationUser.Email,
                                 Name = userProfile?.Name,
                                 Title = request.Title,
-                                Description = request.Description,
+                                SuggestionText = request.Suggestion,
                                 Date = DateTime.Now,
-                                ImagePath = imageUrl
                             };
 
-                            await AddAsync(complaint);
+                            await AddAsync(suggestion);
 
-                            return Ok(new { Message = "Your complaint submitted successfully!", Complaints = complaint });
-
+                            return Ok(new { Message = "Your Suggestion submitted successfully!", Suggestion = suggestion });
                         }
                         catch (Exception ex)
                         {
-
+                            throw;
                         }
                     }
                     return NotFound("User Not Found");
@@ -88,7 +72,7 @@ namespace SignInApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                throw;
             }
         }
 
@@ -127,36 +111,34 @@ namespace SignInApi.Controllers
         }
 
 
-        private async Task AddAsync(Complaint complaint)
+        private async Task AddAsync(Suggestion suggestion)
         {
             try
             {
                 using (var connection = new SqlConnection(_connectionAudit))
                 {
-                    string query = @"INSERT INTO [dbo].[Complaints] (OwnerGuid,Date,Name,Email,Mobile,Title,Description,ImagePath)
-                             VALUES (@OwnerGuid,@Date, @Name,@Email, @Mobile,@Title, @Description, @ImagePath)";
+                    string query = @"INSERT INTO [dbo].[Suggestions] (OwnerGuid,Date,Name,Email,Mobile,Title,Suggestion)
+                             VALUES (@OwnerGuid,@Date, @Name,@Email, @Mobile,@Title, @SuggestionText)";
 
                     using (var command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@OwnerGuid", complaint.OwnerGuid);
-                        command.Parameters.AddWithValue("@Date", complaint.Date);
-                        command.Parameters.AddWithValue("@Name", complaint.Name);
-                        command.Parameters.AddWithValue("@Email", complaint.Email);
-                        command.Parameters.AddWithValue("@Mobile", complaint.Mobile);
-                        command.Parameters.AddWithValue("@Title", complaint.Title);
-                        command.Parameters.AddWithValue("@Description", complaint.Description);
-                        command.Parameters.AddWithValue("@ImagePath", complaint.ImagePath);
+                        command.Parameters.AddWithValue("@OwnerGuid", suggestion.OwnerGuid);
+                        command.Parameters.AddWithValue("@Date", suggestion.Date);
+                        command.Parameters.AddWithValue("@Name", suggestion.Name);
+                        command.Parameters.AddWithValue("@Email", suggestion.Email);
+                        command.Parameters.AddWithValue("@Mobile", suggestion.Mobile);
+                        command.Parameters.AddWithValue("@Title", suggestion.Title);
+                        command.Parameters.AddWithValue("@SuggestionText", suggestion.SuggestionText);
 
                         connection.Open();
                         await command.ExecuteNonQueryAsync();
                     }
                 }
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
                 throw;
             }
-            
         }
     }
 }

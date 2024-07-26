@@ -136,12 +136,12 @@ namespace SignInApi.Controllers
                             var address = await _addressRepository.GetAddressByListingIdAsync(listing.Listingid);
                             bool recordNotFound = address == null;
 
-                            var selectedCountry = countries.FirstOrDefault(c => c.CountryID == addressVM.CountryID);
-                            var selectedState = selectedCountry?.States.FirstOrDefault(s => s.StateID == addressVM.StateID);
-                            var selectedCity = selectedState?.Cities.FirstOrDefault(c => c.CityID == addressVM.CityID);
-                            var selectedAssembly = selectedCity?.Assemblies.FirstOrDefault(a => a.AssemblyID == addressVM.AssemblyID);
-                            var selectedPincode = selectedAssembly?.Pincodes.FirstOrDefault(p => p.PincodeID == addressVM.PincodeID);
-                            var selectedLocality = selectedPincode?.Localities.FirstOrDefault(l => l.LocalityID == addressVM.LocalityID);
+                            //var selectedCountry = countries.FirstOrDefault(c => c.CountryID == addressVM.CountryID);
+                            //var selectedState = selectedCountry?.States.FirstOrDefault(s => s.StateID == addressVM.StateID);
+                            //var selectedCity = selectedState?.Cities.FirstOrDefault(c => c.CityID == addressVM.CityID);
+                            //var selectedAssembly = selectedCity?.Assemblies.FirstOrDefault(a => a.AssemblyID == addressVM.AssemblyID);
+                            //var selectedPincode = selectedAssembly?.Pincodes.FirstOrDefault(p => p.PincodeID == addressVM.PincodeID);
+                            //var selectedLocality = selectedPincode?.Localities.FirstOrDefault(l => l.LocalityID == addressVM.LocalityID);
 
                             if (recordNotFound)
                             {
@@ -150,12 +150,12 @@ namespace SignInApi.Controllers
                                     OwnerGuid = currentUserGuid,
                                     ListingID = listing.Listingid,
                                     IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
-                                    CountryID = selectedCountry?.CountryID ?? 0,
-                                    StateID = selectedState?.StateID ?? 0,
-                                    CityID = selectedCity?.CityID ?? 0,
-                                    AssemblyID = selectedAssembly?.AssemblyID ?? 0,
-                                    PincodeID = selectedPincode?.PincodeID ?? 0,
-                                    LocalityID = selectedLocality?.LocalityID ?? 0,
+                                    CountryID = addressVM.CountryID,
+                                    StateID = addressVM.StateID,
+                                    CityID = addressVM.CityID,
+                                    AssemblyID = addressVM.AssemblyID,
+                                    PincodeID = addressVM.PincodeID,
+                                    LocalityID = addressVM.LocalityID,
                                     LocalAddress = addressVM.LocalAddress // Set as needed
                                 };
 
@@ -164,13 +164,13 @@ namespace SignInApi.Controllers
                             }
                             else
                             {
-                                address.CountryID = selectedCountry?.CountryID ?? 0;
-                                address.StateID = selectedState?.StateID ?? 0;
-                                address.CityID = selectedCity?.CityID ?? 0;
-                                address.AssemblyID = selectedAssembly?.AssemblyID ?? 0;
-                                address.PincodeID = selectedPincode?.PincodeID ?? 0;
-                                address.LocalityID = selectedLocality?.LocalityID ?? 0;
-                                address.LocalAddress = addressVM.LocalAddress; // Set as needed
+                                address.CountryID = addressVM.CountryID != 0 ? addressVM.CountryID : address.CountryID;
+                                address.StateID = addressVM.StateID != 0 ? addressVM.StateID : address.StateID;
+                                address.CityID = addressVM.CityID != 0 ? addressVM.CityID : address.CityID;
+                                address.AssemblyID = addressVM.AssemblyID != 0 ? addressVM.AssemblyID : address.AssemblyID;
+                                address.PincodeID = addressVM.PincodeID != 0 ? addressVM.PincodeID : address.PincodeID;
+                                address.LocalityID = addressVM.LocalityID != 0 ? addressVM.LocalityID : address.LocalityID;
+                                address.LocalAddress = !string.IsNullOrEmpty(addressVM.LocalAddress) ? addressVM.LocalAddress : address.LocalAddress; // Set as needed
 
                                 await _addressRepository.UpdateAddress(address);
                                 response = new { Message = "Address Details Updated successfully", Address = address, Country = countries };

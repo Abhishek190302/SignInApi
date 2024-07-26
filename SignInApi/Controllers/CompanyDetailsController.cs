@@ -23,11 +23,6 @@ namespace SignInApi.Controllers
         [Route("AddOrUpdateCompanyDetails")]
         public async Task<IActionResult> AddOrUpdateCompanyDetails(CompanyViewModel companyVM)
         {
-            if (!companyVM.IsValid())
-            {
-                return BadRequest("All fields are compulsory required...");
-            }
-
             var user = _httpContextAccessor.HttpContext.User;
             if (user.Identity.IsAuthenticated)
             {
