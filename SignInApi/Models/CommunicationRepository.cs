@@ -31,10 +31,11 @@ namespace SignInApi.Models
                         Email = row.Field<string>("Email") ?? string.Empty,
                         Mobile = row.Field<string>("Mobile") ?? string.Empty,
                         Telephone = row.Field<string>("Telephone") ?? string.Empty,
-                        Whatsapp = row.Field<string>("Whatsapp") ?? string.Empty,
+                        TelephoneSecond = row.Field<string>("TelephoneSecond") ?? string.Empty,
                         Website = row.Field<string>("Website") ?? string.Empty,
                         TollFree = row.Field<string>("TollFree") ?? string.Empty,
-                        IPAddress = row.Field<string>("IPAddress") ?? string.Empty
+                        IPAddress = row.Field<string>("IPAddress") ?? string.Empty,
+                        Language = row.Field<string>("Language") ?? string.Empty
                     };
                 }
                 return null;

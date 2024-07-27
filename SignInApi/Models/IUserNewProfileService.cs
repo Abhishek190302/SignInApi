@@ -4,7 +4,7 @@
     {
         Task<UserNewProfile> GetProfileByOwnerGuid(string ownerGuid);
         Task AddUserProfile(UserNewProfile userProfile, string imageURL);
-        Task UpdateUserProfile(UserNewProfile userProfile);
+        Task UpdateUserProfile(UserNewProfile userProfile,string imageURL);
         Task<string> UploadProfileImage(IFormFile file, string ownerGuid);
     }
 }

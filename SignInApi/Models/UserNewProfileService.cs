@@ -57,7 +57,7 @@ namespace SignInApi.Models
             {
                 await connection.OpenAsync();
 
-                var command = new SqlCommand("INSERT INTO [dbo].[UserProfile] (OwnerGuid, IPAddress, Name, LastName, Gender, CreatedDate, TimeZoneOfCountry, ImageUrl) " + "VALUES (@OwnerGuid, @IPAddress, @Name, @LastName, @Gender, @CreatedDate, @TimeZoneOfCountry, @ImageUrl)", connection);
+                var command = new SqlCommand("INSERT INTO [dbo].[UserProfile] (OwnerGuid, IPAddress, Name, LastName, Gender, CreatedDate, TimeZoneOfCountry, ImageUrl) " + "VALUES (@OwnerGuid, @IPAddress, @Name, @LastName, @Gender, GETDATE(), @TimeZoneOfCountry, @ImageUrl)", connection);
                 command.Parameters.AddWithValue("@OwnerGuid", userProfile.OwnerGuid);
                 command.Parameters.AddWithValue("@IPAddress", userProfile.IPAddress);
                 command.Parameters.AddWithValue("@Name", userProfile.FirstName);
@@ -70,17 +70,18 @@ namespace SignInApi.Models
             }
         }
 
-        public async Task UpdateUserProfile(UserNewProfile userProfile)
+        public async Task UpdateUserProfile(UserNewProfile userProfile, string imageURL)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var command = new SqlCommand("UPDATE [dbo].[UserProfile] SET Name = @Name, LastName = @LastName, Gender = @Gender, UpdatedDate = @UpdatedDate, ImageUrl = @ImageUrl " + "WHERE OwnerGuid = @OwnerGuid");
+                await connection.OpenAsync();
+                var command = new SqlCommand("UPDATE [dbo].[UserProfile] SET Name = @Name, LastName = @LastName, Gender = @Gender, UpdatedDate = GETDATE(), ImageUrl = @ImageUrl " + " WHERE OwnerGuid = @OwnerGuid" , connection);
                 command.Parameters.AddWithValue("@OwnerGuid", userProfile.OwnerGuid);
                 command.Parameters.AddWithValue("@IPAddress", userProfile.IPAddress);
                 command.Parameters.AddWithValue("@Name", userProfile.FirstName);
                 command.Parameters.AddWithValue("@LastName", userProfile.LastName);
                 command.Parameters.AddWithValue("@Gender", userProfile.Gender);
-                command.Parameters.AddWithValue("@CreatedDate", userProfile.CreatedDate);
+                command.Parameters.AddWithValue("@UpdatedDate", userProfile.UpdatedDate);
                 command.Parameters.AddWithValue("@TimeZoneOfCountry", userProfile.TimeZoneOfCountry);
                 command.Parameters.AddWithValue("@ImageUrl", userProfile.ImageUrl);
                 await command.ExecuteNonQueryAsync();

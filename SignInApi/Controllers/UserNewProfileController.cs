@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SignInApi.Models;
 using System.Reflection;
+using Twilio.TwiML.Messaging;
 
 namespace SignInApi.Controllers
 {
@@ -57,18 +58,25 @@ namespace SignInApi.Controllers
                             var imageUrl = $"/images/logos/" + currentUserGuid + "/" + userProfileVM.File.FileName + "";
 
                             await _userNewProfileService.AddUserProfile(userProfile, imageUrl);
-                            return Ok("Your profile created successfully.");
+                            return Ok(new { Message = "Your profile created successfully.", Userprofile = userProfile });
                         }
                         else
                         {
+                            var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
+                            using (var stream = new FileStream(imagePath, FileMode.Create))
+                            {
+                                await userProfileVM.File.CopyToAsync(stream);
+                            }
+                            var imageUrl = $"/images/logos/" + currentUserGuid + "/" + userProfileVM.File.FileName + "";
+
                             // Update existing profile
                             userProfile.FirstName = userProfileVM.FirstName;
                             userProfile.LastName = userProfileVM.LastName;
                             userProfile.Gender = userProfileVM.Gender;
-                            userProfile.UpdatedDate = DateTime.UtcNow;
+                            //userProfile.UpdatedDate = DateTime.UtcNow;
 
-                            await _userNewProfileService.UpdateUserProfile(userProfile);
-                            return Ok("Your profile updated successfully.");
+                            await _userNewProfileService.UpdateUserProfile(userProfile, imagePath);
+                            return Ok(new { Message = "Your profile Updated successfully.", Userprofile = userProfile });
                         }
 
                     }
@@ -80,6 +88,43 @@ namespace SignInApi.Controllers
                 return NotFound("User not found");
             }
             return Unauthorized();
+        }
+
+        [HttpGet]
+        [Route("GetMobileEmail")]
+        public async Task<IActionResult> GetMobileEmail()
+        {
+            try
+            {
+
+                var user = _httpContextAccessor.HttpContext.User;
+                if (user.Identity.IsAuthenticated)
+                {
+                    var userName = user.Identity.Name;
+
+                    var applicationUser = await _userService.GetUserByUserName(userName);
+                    if (applicationUser != null)
+                    {
+                        try
+                        {
+                            string currentUserGuid = applicationUser.Id.ToString();
+                            var mobile = applicationUser.PhoneNumber;
+                            var email = applicationUser.Email;
+                            return Ok(new { mobile, email });
+                        }
+                        catch (Exception ex)
+                        {
+                            throw;
+                        }
+                    }
+                    return NotFound("User Not Found");
+                }
+                return Unauthorized();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }

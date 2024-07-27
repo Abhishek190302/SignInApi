@@ -198,7 +198,7 @@ namespace SignInApi.Models
             return listing;
         }
 
-        public List<string> GetDistinctKeywords(string OwnerGuid)
+        public List<string> GetDistinctKeywords()
         {
             var keywords = new List<string>();
 
@@ -206,8 +206,7 @@ namespace SignInApi.Models
             {
                 connection.Open();
 
-                SqlCommand command = new SqlCommand("SELECT DISTINCT SeoKeyword FROM [dbo].[Keyword] WHERE OwnerGuid=@OwnerGuid", connection);
-                command.Parameters.AddWithValue("@OwnerGuid", OwnerGuid);
+                SqlCommand command = new SqlCommand("SELECT DISTINCT SeoKeyword FROM [dbo].[Keyword]", connection);
                 SqlDataAdapter adapter = new SqlDataAdapter(command);                   
                 DataTable dt = new DataTable();
                 adapter.Fill(dt);

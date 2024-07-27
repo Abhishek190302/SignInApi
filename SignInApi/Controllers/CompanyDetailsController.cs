@@ -12,7 +12,7 @@ namespace SignInApi.Controllers
         private readonly CompanyDetailsRepository _companydetailsRepository;
         private readonly UserService _userService;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public CompanyDetailsController(UserService userService,CompanyDetailsRepository companydetailsRepository, IHttpContextAccessor httpContextAccessor)
+        public CompanyDetailsController(UserService userService, CompanyDetailsRepository companydetailsRepository, IHttpContextAccessor httpContextAccessor)
         {
             _userService = userService;
             _companydetailsRepository = companydetailsRepository;
@@ -59,12 +59,10 @@ namespace SignInApi.Controllers
                         listing.GSTNumber = companyVM.GSTNumber;
                         listing.Description = companyVM.Description;
 
-                        var distinctKeywords = _companydetailsRepository.GetDistinctKeywords(currentUserGuid);
-
                         if (recordNotFound)
                         {
                             await _companydetailsRepository.AddListingAsync(listing);
-                            return Ok(new { Message = "Company Details created successfully", Listing = listing, BussinessType = distinctKeywords });
+                            return Ok(new { Message = "Company Details created successfully", Listing = listing });
                         }
                         else
                         {
@@ -74,7 +72,7 @@ namespace SignInApi.Controllers
                             listing.Status = 1;
 
                             await _companydetailsRepository.UpdateListingAsync(listing);
-                            return Ok(new { Message = "Company Details updated successfully", Listing = listing, BussinessType = distinctKeywords });
+                            return Ok(new { Message = "Company Details updated successfully", Listing = listing });
                         }
                     }
                     catch (Exception ex)
@@ -86,6 +84,41 @@ namespace SignInApi.Controllers
 
             }
             return Unauthorized();
+        }
+
+        [HttpGet]
+        [Route("GetBussinessCategorys")]
+        public async Task<IActionResult> GetBussinessCategorys()
+        {
+            try
+            {
+
+                var user = _httpContextAccessor.HttpContext.User;
+                if (user.Identity.IsAuthenticated)
+                {
+                    var userName = user.Identity.Name;
+
+                    var applicationUser = await _userService.GetUserByUserName(userName);
+                    if (applicationUser != null)
+                    {
+                        try
+                        {
+                            var distinctKeywords = _companydetailsRepository.GetDistinctKeywords();
+                            return Ok(new { BussinessCategory = distinctKeywords });
+                        }
+                        catch (Exception ex)
+                        {
+                            throw;
+                        }
+                    }
+                    return NotFound("User Not Found");
+                }
+                return Unauthorized();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }
