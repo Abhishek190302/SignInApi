@@ -38,6 +38,7 @@ builder.Services.AddTransient<ListingEnquiryService>();
 builder.Services.AddTransient<BinddetailsManagelistingRepository>();
 builder.Services.AddTransient<ImageuploadRepository>();
 builder.Services.AddTransient<DashboardRepository>();
+builder.Services.AddTransient<SearchListingRepository>();
 builder.Services.AddTransient<IUserNewProfileService, UserNewProfileService>();
 builder.Services.AddTransient<EnquiryListingRepository>();
 builder.Services.AddTransient<IUserProfileService, UserProfileService>();
