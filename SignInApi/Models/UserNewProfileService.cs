@@ -63,8 +63,7 @@ namespace SignInApi.Models
                 command.Parameters.AddWithValue("@Name", userProfile.FirstName);
                 command.Parameters.AddWithValue("@LastName", userProfile.LastName);
                 command.Parameters.AddWithValue("@Gender", userProfile.Gender);
-                command.Parameters.AddWithValue("@CreatedDate", userProfile.CreatedDate);
-                command.Parameters.AddWithValue("@TimeZoneOfCountry", userProfile.TimeZoneOfCountry);
+                command.Parameters.AddWithValue("@TimeZoneOfCountry", "India Standard Time");
                 command.Parameters.AddWithValue("@ImageUrl", imageURL);
                 await command.ExecuteNonQueryAsync();
             }
@@ -72,19 +71,31 @@ namespace SignInApi.Models
 
         public async Task UpdateUserProfile(UserNewProfile userProfile, string imageURL)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-                var command = new SqlCommand("UPDATE [dbo].[UserProfile] SET Name = @Name, LastName = @LastName, Gender = @Gender, UpdatedDate = GETDATE(), ImageUrl = @ImageUrl " + " WHERE OwnerGuid = @OwnerGuid" , connection);
-                command.Parameters.AddWithValue("@OwnerGuid", userProfile.OwnerGuid);
-                command.Parameters.AddWithValue("@IPAddress", userProfile.IPAddress);
-                command.Parameters.AddWithValue("@Name", userProfile.FirstName);
-                command.Parameters.AddWithValue("@LastName", userProfile.LastName);
-                command.Parameters.AddWithValue("@Gender", userProfile.Gender);
-                command.Parameters.AddWithValue("@UpdatedDate", userProfile.UpdatedDate);
-                command.Parameters.AddWithValue("@TimeZoneOfCountry", userProfile.TimeZoneOfCountry);
-                command.Parameters.AddWithValue("@ImageUrl", userProfile.ImageUrl);
-                await command.ExecuteNonQueryAsync();
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    var command = new SqlCommand(
+                        "UPDATE [dbo].[UserProfile] " +
+                        "SET Name = @Name, LastName = @LastName, Gender = @Gender, UpdatedDate = GETDATE(), ImageUrl = @ImageUrl " +
+                        "WHERE OwnerGuid = @OwnerGuid", connection);
+
+                    command.Parameters.AddWithValue("@OwnerGuid", userProfile.OwnerGuid);
+                    command.Parameters.AddWithValue("@IPAddress", userProfile.IPAddress);
+                    command.Parameters.AddWithValue("@Name", userProfile.FirstName);
+                    command.Parameters.AddWithValue("@LastName", userProfile.LastName);
+                    command.Parameters.AddWithValue("@Gender", userProfile.Gender);
+                    command.Parameters.AddWithValue("@TimeZoneOfCountry", "India Standard Time");
+                    command.Parameters.AddWithValue("@ImageUrl", imageURL); // Use the passed imageURL parameter
+
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exception
+                // Log the exception message or take appropriate actions
             }
         }
 

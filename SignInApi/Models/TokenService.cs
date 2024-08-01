@@ -21,9 +21,9 @@ namespace SignInApi.Models
 
             var claims = new[]
             {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+            new Claim(JwtRegisteredClaimNames.Sub, user.phone),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Name, user.Email),
+            new Claim(ClaimTypes.Name, user.phone),
             new Claim("isVendor", user.IsVendor.ToString())
         };
 

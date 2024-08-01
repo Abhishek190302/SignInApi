@@ -36,7 +36,6 @@ namespace SignInApi.Controllers
                     try
                     {
                         string currentUserGuid = applicationUser.Id.ToString();
-                        var userProfile = await _userNewProfileService.GetProfileByOwnerGuid(currentUserGuid);
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         bool recordNotFound = listing == null;
 
@@ -61,9 +60,6 @@ namespace SignInApi.Controllers
                         listing.Turnover = companyVM.Turnover;
                         listing.GSTNumber = companyVM.GSTNumber;
                         listing.Description = companyVM.Description;
-                        listing.Name = userProfile.FirstName;
-                        listing.LastName = userProfile.LastName;
-                        listing.Gender = userProfile.Gender;
 
                         if (recordNotFound)
                         {

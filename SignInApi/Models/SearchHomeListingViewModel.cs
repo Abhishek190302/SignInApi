@@ -2,7 +2,7 @@
 {
     public class SearchHomeListingViewModel
     {
-        public string Id { get; set; }
+        public string listingId { get; set; }
         public string CompanyName { get; set; }
         public string ListingUrl { get; set; }
         public string CityName { get; set; }

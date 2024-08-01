@@ -70,6 +70,7 @@ namespace SignInApi.Controllers
                 {
                     Id = row["Id"].ToString(),
                     Email = row["Email"].ToString(),
+                    phone = row["PhoneNumber"].ToString(),
                     PasswordHash = row["PasswordHash"].ToString(),
                     IsVendor = Convert.ToBoolean(row["IsVendor"])// Assuming you store the hash
                 };

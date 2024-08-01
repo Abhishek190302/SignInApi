@@ -18,7 +18,7 @@ namespace SignInApi.Models
             {
                 try
                 {
-                    SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[AspNetUsers] WHERE UserName = @UserName", conn);
+                    SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[AspNetUsers] WHERE PhoneNumber = @UserName", conn);
                     cmd.Parameters.AddWithValue("@UserName", userName);
                     await conn.OpenAsync();
                     SqlDataAdapter da = new SqlDataAdapter(cmd);

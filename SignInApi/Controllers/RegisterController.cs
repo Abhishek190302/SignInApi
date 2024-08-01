@@ -17,18 +17,19 @@ namespace SignInApi.Controllers
     public class RegisterController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        
-        public RegisterController(IConfiguration configuration)
+        private readonly TokenService _tokenService;
+        public RegisterController(IConfiguration configuration, TokenService tokenService)
         {
             _configuration = configuration;
+            _tokenService = tokenService;
         }
 
         [HttpPost]
         [Route("RegisterPanel")]
         public IActionResult RegisterPanel([FromBody] RegisterRequest request)
         {
-            bool emailconfirmed = true,phonenumberconfirmed = true,twofactorenable = false,lockoutenable = true,isregistrationcompleted=true;
-
+            bool emailconfirmed = true, phonenumberconfirmed = true, twofactorenable = false, lockoutenable = true, isregistrationcompleted = true;
+            ErrorResponse errorResponse = new ErrorResponse();
             // Hash the password
             var hasher = new PasswordHasher<RegisterRequest>();
             request.Password = hasher.HashPassword(request, request.Password);
@@ -40,46 +41,70 @@ namespace SignInApi.Controllers
             var Token = Request.Headers["Authorization"].ToString();
 
             if (Token.Contains("c4NjY4NTMyMTMiLCJhdWQiOiIxOTg0OTkz"))
-            {                
+            {
                 try
                 {
-                    SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser"));
-                    if (con.State == ConnectionState.Closed) { con.Open(); }
-                    SqlCommand cmd = new SqlCommand("usp_RegisteruserConsumer", con);
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@id", userId);
-                    cmd.Parameters.AddWithValue("@vendortype", request.Vendortype);
-                    cmd.Parameters.AddWithValue("@username", request.Email);
-                    cmd.Parameters.AddWithValue("@NormalizedUserName", request.Email);
-                    cmd.Parameters.AddWithValue("@email", request.Email);
-                    cmd.Parameters.AddWithValue("@NormalizedEmail", request.Email);
-                    cmd.Parameters.AddWithValue("@mobile", request.Mobile);
-                    cmd.Parameters.AddWithValue("@password", request.Password);
-                    cmd.Parameters.AddWithValue("@securitystamp", securityStamp);
-                    cmd.Parameters.AddWithValue("@concurrencystamp", concurrencyStamp);
-                    cmd.Parameters.AddWithValue("@confirmpassword", request.Confirmpassword);
-                    cmd.Parameters.AddWithValue("@Emailconfirmed", emailconfirmed);
-                    cmd.Parameters.AddWithValue("@Phonenumberconfirmed", phonenumberconfirmed);
-                    cmd.Parameters.AddWithValue("@Twofactorenable", twofactorenable);
-                    cmd.Parameters.AddWithValue("@Lockoutenable", lockoutenable);
-                    cmd.Parameters.AddWithValue("@Isregistrationcompleted", isregistrationcompleted);
-                    cmd.ExecuteNonQuery();
-                    con.Close();
-                    return Ok(new  { Message = "User Register consumer account successfully...", Response = request });
+                    using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser")))
+                    {
+                        if (con.State == ConnectionState.Closed) { con.Open(); }
+                        using (SqlCommand cmd = new SqlCommand("usp_RegisteruserConsumer", con))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@id", userId);
+                            cmd.Parameters.AddWithValue("@vendortype", request.Vendortype);
+                            cmd.Parameters.AddWithValue("@username", request.Email);
+                            cmd.Parameters.AddWithValue("@NormalizedUserName", request.Email);
+                            cmd.Parameters.AddWithValue("@email", request.Email);
+                            cmd.Parameters.AddWithValue("@NormalizedEmail", request.Email);
+                            cmd.Parameters.AddWithValue("@mobile", request.Mobile);
+                            cmd.Parameters.AddWithValue("@password", request.Password);
+                            cmd.Parameters.AddWithValue("@securitystamp", securityStamp);
+                            cmd.Parameters.AddWithValue("@concurrencystamp", concurrencyStamp);
+                            cmd.Parameters.AddWithValue("@confirmpassword", request.Confirmpassword);
+                            cmd.Parameters.AddWithValue("@Emailconfirmed", emailconfirmed);
+                            cmd.Parameters.AddWithValue("@Phonenumberconfirmed", phonenumberconfirmed);
+                            cmd.Parameters.AddWithValue("@Twofactorenable", twofactorenable);
+                            cmd.Parameters.AddWithValue("@Lockoutenable", lockoutenable);
+                            cmd.Parameters.AddWithValue("@Isregistrationcompleted", isregistrationcompleted);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        SqlCommand cmduser = new SqlCommand("SELECT * FROM [dbo].[AspNetUsers]  WHERE (PhoneNumber = @MobileOrEmail OR Email = @MobileOrEmail) AND IsRegistrationCompleted = 1", con);
+                        cmduser.Parameters.AddWithValue("@MobileOrEmail", request.Mobile);
+                        SqlDataAdapter da = new SqlDataAdapter(cmduser);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        if (dt.Rows.Count == 0)
+                        {
+                            errorResponse.Message = "Invalid Email ID or Password";
+                            errorResponse.StatusCode = Constantss.Unauthorized;
+                            return BadRequest("Invalid Email ID or Password");
+                        }
+
+                        DataRow row = dt.Rows[0];
+                        var usr = new ApplicationUsers
+                        {
+                            Id = row["Id"].ToString(),
+                            Email = row["Email"].ToString(),
+                            phone = row["PhoneNumber"].ToString(),
+                            PasswordHash = row["PasswordHash"].ToString(),
+                            IsVendor = Convert.ToBoolean(row["IsVendor"])// Assuming you store the hash
+                        };
+                        var token = _tokenService.GenerateToken(usr);
+                        return Ok(new { Message = "User registered consumer account successfully...", Response = request, Token = token });
+                    }
                 }
                 catch (Exception ex)
                 {
-
-                    return BadRequest(new RegisterResponse { Message = "User Not Register ..." });
-
-                }             
+                    return BadRequest(new RegisterResponse { Message = "User not registered..." });
+                }
             }
             else
             {
                 // Token does not contain the specified substring, return 401 Unauthorized
                 Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return BadRequest(Response.WriteAsync("Unauthorized: Invalid token."));
-            }   
+                return Unauthorized("Unauthorized: Invalid token.");
+            }
         }
 
 
@@ -88,7 +113,7 @@ namespace SignInApi.Controllers
         public IActionResult RegisterPanelBusiness([FromBody] RegisterRequestBusiness request)
         {
             bool emailconfirmed = true, phonenumberconfirmed = true, twofactorenable = false, lockoutenable = true, isregistrationcompleted = true;
-
+            ErrorResponse errorResponse = new ErrorResponse();
             // Hash the password
             var hasher = new PasswordHasher<RegisterRequestBusiness>();
             request.Password = hasher.HashPassword(request, request.Password);
@@ -125,7 +150,30 @@ namespace SignInApi.Controllers
 
                 cmd.ExecuteNonQuery();
                 con.Close();
-                return Ok(new { Message = "User Register business account successfully...", Response = request });                    
+
+                SqlCommand cmdbussi = new SqlCommand("SELECT * FROM [dbo].[AspNetUsers]  WHERE (PhoneNumber = @MobileOrEmail OR Email = @MobileOrEmail) AND IsRegistrationCompleted = 1", con);
+                cmdbussi.Parameters.AddWithValue("@MobileOrEmail", request.Mobile);
+                SqlDataAdapter da = new SqlDataAdapter(cmdbussi);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                if (dt.Rows.Count == 0)
+                {
+                    errorResponse.Message = "Invalid Email ID or Password";
+                    errorResponse.StatusCode = Constantss.Unauthorized;
+                    return BadRequest("Invalid Email ID or Password");
+                }
+
+                DataRow row = dt.Rows[0];
+                var usr = new ApplicationUsers
+                {
+                    Id = row["Id"].ToString(),
+                    Email = row["Email"].ToString(),
+                    phone = row["PhoneNumber"].ToString(),
+                    PasswordHash = row["PasswordHash"].ToString(),
+                    IsVendor = Convert.ToBoolean(row["IsVendor"])// Assuming you store the hash
+                };
+                var token = _tokenService.GenerateToken(usr);
+                return Ok(new { Message = "User Register business account successfully...", Response = request, Token = token });                    
             }
             else
             {

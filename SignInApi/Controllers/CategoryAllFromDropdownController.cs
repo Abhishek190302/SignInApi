@@ -155,8 +155,8 @@ namespace SignInApi.Controllers
                             {
                                 category.FirstCategoryID = categoryVM.FirstCategoryID != 0 ? categoryVM.FirstCategoryID : category.FirstCategoryID;
                                 category.SecondCategoryID = categoryVM.SecondCategoryID != 0 ? categoryVM.SecondCategoryID : category.SecondCategoryID;
-                                category.ThirdCategoryID = !string.IsNullOrEmpty(categoryVM.ThirdCategoryID) != null ? categoryVM.ThirdCategoryID : category.ThirdCategoryID;
-                                category.FourthCategoryID = !string.IsNullOrEmpty(categoryVM.FourthCategoryID) != null ? categoryVM.FourthCategoryID : category.FourthCategoryID;
+                                category.ThirdCategoryID = categoryVM.ThirdCategoryID != null ? categoryVM.ThirdCategoryID : category.ThirdCategoryID;
+                                category.FourthCategoryID = categoryVM.FourthCategoryID != null ? categoryVM.FourthCategoryID : category.FourthCategoryID;
                                 category.FifthCategoryID = categoryVM.FifthCategoryID != null ? categoryVM.FifthCategoryID : category.FifthCategoryID;
                                 category.SixthCategoryID = categoryVM.SixthCategoryID != null ? categoryVM.SixthCategoryID : category.SixthCategoryID;
                             }

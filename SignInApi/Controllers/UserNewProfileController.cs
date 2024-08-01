@@ -13,6 +13,7 @@ namespace SignInApi.Controllers
         private readonly UserService _userService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUserNewProfileService _userNewProfileService;
+        public string TimeZoneOfCountry { get; set; } = "India Standard Time";
         public UserNewProfileController(IUserNewProfileService userNewProfileService, IHttpContextAccessor httpContextAccessor, UserService userService)
         {
             _userNewProfileService = userNewProfileService;
@@ -47,7 +48,7 @@ namespace SignInApi.Controllers
                                 LastName = userProfileVM.LastName,
                                 Gender = userProfileVM.Gender,
                                 CreatedDate = DateTime.UtcNow,
-                                TimeZoneOfCountry = userProfileVM.TimeZoneOfCountry,
+                                TimeZoneOfCountry = TimeZoneOfCountry,
                             };
 
                             var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
@@ -75,7 +76,7 @@ namespace SignInApi.Controllers
                             userProfile.Gender = userProfileVM.Gender;
                             //userProfile.UpdatedDate = DateTime.UtcNow;
 
-                            await _userNewProfileService.UpdateUserProfile(userProfile, imagePath);
+                            await _userNewProfileService.UpdateUserProfile(userProfile, imageUrl);
                             return Ok(new { Message = "Your profile Updated successfully.", Userprofile = userProfile });
                         }
 

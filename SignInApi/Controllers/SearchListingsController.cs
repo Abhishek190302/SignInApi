@@ -36,7 +36,7 @@ namespace SignInApi.Controllers
             var result = filteredListings.Select(x => new SearchHomeListingViewModel
             {
                 CompanyName = x.CompanyName,
-                Id = x.ListingId,
+                listingId = x.ListingId,
                 ListingUrl = x.ListingURL,
                 CityName = localities.FirstOrDefault(l => l.Id == x.Address.AssemblyID)?.City.Name,
                 LocalityName = localities.FirstOrDefault(l => l.Id == x.Address.AssemblyID)?.Name
