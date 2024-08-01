@@ -72,7 +72,7 @@ namespace SignInApi.Controllers
 
         private async Task<ApplicationUserRequest> GetUserByUserNameAsync(SqlConnection connection, string userName)
         {
-            var command = new SqlCommand("SELECT Id, Email, PhoneNumber, IsVendor FROM [dbo].[AspNetUsers] WHERE UserName = @UserName", connection);
+            var command = new SqlCommand("SELECT Id, Email, PhoneNumber, IsVendor FROM [dbo].[AspNetUsers] WHERE PhoneNumber = @UserName", connection);
             command.Parameters.AddWithValue("@UserName", userName);
             var dt = new DataTable();
             var da = new SqlDataAdapter(command);

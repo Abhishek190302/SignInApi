@@ -56,7 +56,7 @@ namespace SignInApi.Controllers
                             {
                                 await userProfileVM.File.CopyToAsync(stream);
                             }
-                            var imageUrl = $"/images/logos/" + currentUserGuid + "/" + userProfileVM.File.FileName + "";
+                            var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
 
                             await _userNewProfileService.AddUserProfile(userProfile, imageUrl);
                             return Ok(new { Message = "Your profile created successfully.", Userprofile = userProfile });
@@ -68,7 +68,7 @@ namespace SignInApi.Controllers
                             {
                                 await userProfileVM.File.CopyToAsync(stream);
                             }
-                            var imageUrl = $"/images/logos/" + currentUserGuid + "/" + userProfileVM.File.FileName + "";
+                            var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
 
                             // Update existing profile
                             userProfile.FirstName = userProfileVM.FirstName;

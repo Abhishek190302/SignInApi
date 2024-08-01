@@ -62,7 +62,7 @@ namespace SignInApi.Controllers
                                     await file.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + file.FileName + "";
+                                var imageUrl = $"/images/logos/" + file.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -88,7 +88,7 @@ namespace SignInApi.Controllers
                                     await file.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + file.FileName + "";
+                                var imageUrl = $"/images/logos/" + file.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -193,7 +193,7 @@ namespace SignInApi.Controllers
                                 {
                                     await model.File.CopyToAsync(stream);
                                 }
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + model.Designation + "/" + model.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + model.File.FileName + "";
 
 
                                 // Insert owner image details into the database
@@ -255,7 +255,7 @@ namespace SignInApi.Controllers
                                 {
                                     await model.File.CopyToAsync(stream);
                                 }
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + model.Designation + "/" + model.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + model.File.FileName + "";
 
 
                                 // Update owner image details into the database
@@ -348,7 +348,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -375,7 +375,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -431,7 +431,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -458,7 +458,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -515,7 +515,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -542,7 +542,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -599,7 +599,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -626,7 +626,7 @@ namespace SignInApi.Controllers
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + currentUserGuid + "/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
