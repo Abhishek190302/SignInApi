@@ -42,6 +42,14 @@ namespace SignInApi.Controllers
 
             if (Token.Contains("c4NjY4NTMyMTMiLCJhdWQiOiIxOTg0OTkz"))
             {
+
+                if (IsMobileNumberExists(request.Mobile))
+                {
+                    errorResponse.Message = "Mobile number already exists.";
+                    errorResponse.StatusCode = StatusCodes.Status400BadRequest;
+                    return BadRequest(errorResponse);
+                }
+
                 try
                 {
                     using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser")))
@@ -52,8 +60,8 @@ namespace SignInApi.Controllers
                             cmd.CommandType = CommandType.StoredProcedure;
                             cmd.Parameters.AddWithValue("@id", userId);
                             cmd.Parameters.AddWithValue("@vendortype", request.Vendortype);
-                            cmd.Parameters.AddWithValue("@username", request.Email);
-                            cmd.Parameters.AddWithValue("@NormalizedUserName", request.Email);
+                            cmd.Parameters.AddWithValue("@username", request.Mobile);
+                            cmd.Parameters.AddWithValue("@NormalizedUserName", request.Mobile);
                             cmd.Parameters.AddWithValue("@email", request.Email);
                             cmd.Parameters.AddWithValue("@NormalizedEmail", request.Email);
                             cmd.Parameters.AddWithValue("@mobile", request.Mobile);
@@ -68,6 +76,8 @@ namespace SignInApi.Controllers
                             cmd.Parameters.AddWithValue("@Isregistrationcompleted", isregistrationcompleted);
                             cmd.ExecuteNonQuery();
                         }
+
+
 
                         SqlCommand cmduser = new SqlCommand("SELECT * FROM [dbo].[AspNetUsers]  WHERE (PhoneNumber = @MobileOrEmail OR Email = @MobileOrEmail) AND IsRegistrationCompleted = 1", con);
                         cmduser.Parameters.AddWithValue("@MobileOrEmail", request.Mobile);
@@ -126,6 +136,15 @@ namespace SignInApi.Controllers
 
             if (Token.Contains("c4NjY4NTMyMTMiLCJhdWQiOiIxOTg0OTgH"))
             {
+
+                if (IsMobileNumberExists(request.Mobile))
+                {
+                    errorResponse.Message = "Mobile number already exists.";
+                    errorResponse.StatusCode = StatusCodes.Status400BadRequest;
+                    return BadRequest(errorResponse);
+                }
+
+
                 SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser"));
                 if (con.State == ConnectionState.Closed) { con.Open(); }
                 SqlCommand cmd = new SqlCommand("usp_RegisteruserBusiness", con);
@@ -133,8 +152,8 @@ namespace SignInApi.Controllers
                 cmd.Parameters.AddWithValue("@id", userId);
                 cmd.Parameters.AddWithValue("@vendortype", request.Vendortype);
                 cmd.Parameters.AddWithValue("@email", request.Email);
-                cmd.Parameters.AddWithValue("@username", request.Email);
-                cmd.Parameters.AddWithValue("@NormalizedUserName", request.Email);
+                cmd.Parameters.AddWithValue("@username", request.Mobile);
+                cmd.Parameters.AddWithValue("@NormalizedUserName", request.Mobile);
                 cmd.Parameters.AddWithValue("@NormalizedEmail", request.Email);
                 cmd.Parameters.AddWithValue("@mobile", request.Mobile);
                 cmd.Parameters.AddWithValue("@password", request.Password);
@@ -147,6 +166,8 @@ namespace SignInApi.Controllers
                 cmd.Parameters.AddWithValue("@Twofactorenable", twofactorenable);
                 cmd.Parameters.AddWithValue("@Lockoutenable", lockoutenable);
                 cmd.Parameters.AddWithValue("@Isregistrationcompleted", isregistrationcompleted);
+
+
 
                 cmd.ExecuteNonQuery();
                 con.Close();
@@ -193,6 +214,17 @@ namespace SignInApi.Controllers
             }
         }
 
+        private bool IsMobileNumberExists(string mobileNumber)
+        {
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser")))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM [dbo].[AspNetUsers] WHERE PhoneNumber = @PhoneNumber", con);
+                cmd.Parameters.AddWithValue("@PhoneNumber", mobileNumber);
+                con.Open();
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
+            }
+        }
 
         private string GenerateSecurityStamp()
         {

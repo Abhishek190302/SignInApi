@@ -5,6 +5,7 @@ using SignInApi.Models;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics.Metrics;
+using System.Reflection;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace SignInApi.Controllers
@@ -48,21 +49,28 @@ namespace SignInApi.Controllers
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         if (listing != null)
                         {
-                            var logoimage = _imageuploadRepository.GetlogoImageByListingIdAsync(listing.Listingid);
+                            var logoimage = await _imageuploadRepository.GetlogoImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = logoimage == null;
                             if (recordNotFound)
                             {
                                 if (file == null || file.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", file.FileName);
+                                // Create the directory if it doesn't exist
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, file.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await file.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + file.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{file.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -81,18 +89,28 @@ namespace SignInApi.Controllers
                                 if (file == null || file.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", file.FileName);
+                                // Create the directory if it doesn't exist
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, file.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await file.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + file.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{file.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
-                                    var command = new SqlCommand("Update [dbo].[LogoImage] Set OwnerGuid='"+ currentUserGuid + "',ImagePath='"+ imageUrl + "',CreatedDate=GETDATE(),UpdateDate=GETDATE() Where ListingID='"+ listing.Listingid + "'", connection);
+                                    var command = new SqlCommand("UPDATE [dbo].[LogoImage] SET OwnerGuid=@OwnerGuid,ImagePath=@ImagePath,CreatedDate=GETDATE(),UpdateDate=GETDATE() WHERE ListingID=@ListingID", connection);
+                                    command.Parameters.AddWithValue("@OwnerGuid", currentUserGuid);
+                                    command.Parameters.AddWithValue("@ListingID", listing.Listingid);
+                                    command.Parameters.AddWithValue("@ImagePath", imageUrl);
                                     connection.Open();
                                     await command.ExecuteNonQueryAsync();
                                 }
@@ -103,6 +121,7 @@ namespace SignInApi.Controllers
                     }
                     catch (Exception ex)
                     {
+                        // Consider logging the exception or returning a more specific error message
                         throw;
                     }
                 }
@@ -176,7 +195,7 @@ namespace SignInApi.Controllers
                                 }
                             }
 
-                            var ownerimage = _imageuploadRepository.GetOwnerImageByListingIdAsync(listing.Listingid);
+                            var ownerimage = await _imageuploadRepository.GetOwnerImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = ownerimage == null;
                             
                             if (recordNotFound)
@@ -187,13 +206,22 @@ namespace SignInApi.Controllers
                                     return BadRequest("All fields are compulsory!");
                                 }
 
+
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, model.File.FileName);
+
                                 // Save the image file
-                                var imagePath = Path.Combine("wwwroot/images/logos/", model.File.FileName);
+                                //var imagePath = Path.Combine("wwwroot/images/logos/", model.File.FileName);
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await model.File.CopyToAsync(stream);
                                 }
-                                var imageUrl = $"/images/logos/" + model.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{model.File.FileName}";
 
 
                                 // Insert owner image details into the database
@@ -249,13 +277,21 @@ namespace SignInApi.Controllers
                                     return BadRequest("All fields are compulsory!");
                                 }
 
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, model.File.FileName);
+
                                 // Save the image file
-                                var imagePath = Path.Combine("wwwroot/images/logos/", model.File.FileName);
+                                //var imagePath = Path.Combine("wwwroot/images/logos/", model.File.FileName);
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await model.File.CopyToAsync(stream);
                                 }
-                                var imageUrl = $"/images/logos/" + model.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{model.File.FileName}";
 
 
                                 // Update owner image details into the database
@@ -333,7 +369,7 @@ namespace SignInApi.Controllers
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         if (listing != null)
                         {
-                            var gallery = _imageuploadRepository.GetGallerysImageByListingIdAsync(listing.Listingid);
+                            var gallery = await _imageuploadRepository.GetGallerysImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = gallery == null;
 
                             if (recordNotFound)
@@ -341,14 +377,21 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -368,14 +411,23 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
+                                
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -416,7 +468,7 @@ namespace SignInApi.Controllers
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         if (listing != null)
                         {
-                            var banner = _imageuploadRepository.GetBannerImageByListingIdAsync(listing.Listingid);
+                            var banner = await _imageuploadRepository.GetBannerImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = banner == null;
 
                             if (recordNotFound)
@@ -424,14 +476,21 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -451,14 +510,21 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
-
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -500,7 +566,7 @@ namespace SignInApi.Controllers
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         if (listing != null)
                         {
-                            var certificate = _imageuploadRepository.GetCertificateImageByListingIdAsync(listing.Listingid);
+                            var certificate = await _imageuploadRepository.GetCertificateImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = certificate == null;
 
                             if (recordNotFound)
@@ -508,14 +574,21 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
-
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -535,14 +608,22 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -584,7 +665,7 @@ namespace SignInApi.Controllers
                         if (listing != null)
                         {
 
-                            var client = _imageuploadRepository.GetClientImageByListingIdAsync(listing.Listingid);
+                            var client = await _imageuploadRepository.GetClientImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = client == null;
 
                             if (recordNotFound)
@@ -592,14 +673,22 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {
@@ -619,14 +708,22 @@ namespace SignInApi.Controllers
                                 if (galleryImage.File == null || galleryImage.File.Length == 0)
                                     return BadRequest("No file uploaded.");
 
-                                var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
+                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                                if (!Directory.Exists(userDirectory))
+                                {
+                                    Directory.CreateDirectory(userDirectory);
+                                }
+
+                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+
+                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
 
                                 using (var stream = new FileStream(imagePath, FileMode.Create))
                                 {
                                     await galleryImage.File.CopyToAsync(stream);
                                 }
 
-                                var imageUrl = $"/images/logos/" + galleryImage.File.FileName + "";
+                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
 
                                 using (var connection = new SqlConnection(_connectionString))
                                 {

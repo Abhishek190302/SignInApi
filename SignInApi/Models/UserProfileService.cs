@@ -29,17 +29,17 @@ namespace SignInApi.Models
                     DataRow row = dt.Rows[0];
                     profileInfo.UserProfile = new UserprofileUpdateVM
                     {
-                        CountryID = row.Field<int>("CountryID"),
-                        StateID = row.Field<int>("StateID"),
-                        CityID = row.Field<int>("CityID"),
-                        AssemblyID = row.Field<int>("AssemblyID"),
-                        PincodeID = row.Field<int>("PincodeID"),
-                        LocalityID = row.Field<int>("LocalityID"),
+                        CountryID = row.Field<int?>("CountryID").GetValueOrDefault(),
+                        StateID = row.Field<int?>("StateID").GetValueOrDefault(),
+                        CityID = row.Field<int?>("CityID").GetValueOrDefault(),
+                        AssemblyID = row.Field<int?>("AssemblyID").GetValueOrDefault(),
+                        PincodeID = row.Field<int?>("PincodeID").GetValueOrDefault(),
+                        LocalityID = row.Field<int?>("LocalityID").GetValueOrDefault(),
                         Address = row.Field<string>("Address"),
                         IsProfileCompleted = row.Field<bool>("IsProfileCompleted"),
-                        DateOfBirth = row.IsNull("DateOfBirth") ? (DateTime?)null : row.Field<DateTime>("DateOfBirth"),
+                        DateOfBirth = row.Field<DateTime?>("DateOfBirth"),
                         MaritalStatus = row.Field<string>("MaritalStatus"),
-                        QualificationId = row.Field<int>("QualificationId")
+                        QualificationId = row.Field<int?>("QualificationId").GetValueOrDefault()
                     };
                 }
             }

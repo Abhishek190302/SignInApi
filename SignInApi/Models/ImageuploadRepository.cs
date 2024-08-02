@@ -18,13 +18,15 @@ namespace SignInApi.Models
                 SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[LogoImage] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
                 await conn.OpenAsync();
+
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
                 adapter.Fill(dt);
+
                 if (dt.Rows.Count > 0)
                 {
                     DataRow row = dt.Rows[0];
-                    return new logoImage
+                    var logoImg = new logoImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
@@ -32,7 +34,11 @@ namespace SignInApi.Models
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
+                    Console.WriteLine($"Logo image found: {logoImg.Listingid}");
+                    return logoImg;
                 }
+
+                Console.WriteLine("No logo image found.");
                 return null;
             }
         }
@@ -64,6 +70,8 @@ namespace SignInApi.Models
                         StateId = row.Field<int?>("StateID") ?? 0,
                     };
                 }
+
+                Console.WriteLine("No logo image found.");
                 return null;
             }
         }
