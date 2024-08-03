@@ -63,12 +63,13 @@ namespace SignInApi.Controllers
                             enquiry.Email= listingEnquiry.Email;
                             enquiry.Message= listingEnquiry.Message;
 
-                            if(recordNotFound)
-                            {
-                                await _listingEnquiryService.AddAsync(enquiry);
-                                return Ok( new { Response= enquiry });
-                            }
+                            
+                            await _listingEnquiryService.AddAsync(enquiry);
+                            return Ok(new { Message = "Enquiry Sent Successfully", Response = enquiry });
 
+                                //await _listingEnquiryService.UpdateAsync(enquiry);
+                                //return Ok(new { Response = enquiry });
+                            
                         }
                     }
                     catch (Exception ex)

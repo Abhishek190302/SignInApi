@@ -11,12 +11,15 @@ namespace SignInApi.Controllers
     {
         private readonly BinddetailsManagelistingRepository _binddetailsListing;
         private readonly UserService _userService;
+        private readonly CategoryRepository _categoryRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public BinddetailsListingController(BinddetailsManagelistingRepository binddetailsListing, UserService userService, IHttpContextAccessor httpContextAccessor)
+        public BinddetailsListingController(BinddetailsManagelistingRepository binddetailsListing, UserService userService, IHttpContextAccessor httpContextAccessor, CategoryRepository categoryRepository)
         {
             _binddetailsListing = binddetailsListing;
             _userService = userService;
             _httpContextAccessor = httpContextAccessor;
+            _categoryRepository = categoryRepository;
+
         }
 
         [HttpGet]
@@ -116,6 +119,10 @@ namespace SignInApi.Controllers
         [Route("GetCategoriesDetailslisting")]
         public async Task<IActionResult> GetCategoriesDetailslisting()
         {
+            var categories = await _categoryRepository.GetFirstCategoriesAsync();
+            object response = new { AllCategories = categories };
+
+
             var user = _httpContextAccessor.HttpContext.User;
             if (user.Identity.IsAuthenticated)
             {
@@ -131,7 +138,8 @@ namespace SignInApi.Controllers
                         if (categoriesdetails != null)
                         {
                             var Categories = await _binddetailsListing.GetCategoryByListingIdAsync(categoriesdetails.Listingid);
-                            return Ok(Categories);
+                            response = new { Category = Categories, AllCategories = categories };
+                            return Ok(response);
                         }
                     }
                     catch (Exception ex)

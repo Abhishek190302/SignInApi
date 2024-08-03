@@ -59,6 +59,42 @@ namespace SignInApi.Models
             }
         }
 
+        public async Task UpdateAsync(ListingEnquiry enquiry)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    string query = "UPDATE [dbo].[Enquiry] " +
+                                   "SET OwnerGuid = @OwnerGuid, " +
+                                   "FullName = @FullName, " +
+                                   "Email = @Email, " +
+                                   "MobileNumber = @MobileNumber, " +
+                                   "EnquiryTitle = @EnquiryTitle, " +
+                                   "Message = @Message, " +
+                                   "CreatedDate = GETDATE() " +
+                                   "WHERE ListingID = @ListingID";
+
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@OwnerGuid", enquiry.OwnerGuid);
+                    cmd.Parameters.AddWithValue("@FullName", enquiry.FullName);
+                    cmd.Parameters.AddWithValue("@Email", enquiry.Email);
+                    cmd.Parameters.AddWithValue("@MobileNumber", enquiry.MobileNumber);
+                    cmd.Parameters.AddWithValue("@EnquiryTitle", enquiry.EnquiryTitle);
+                    cmd.Parameters.AddWithValue("@Message", enquiry.Message);
+                    cmd.Parameters.AddWithValue("@ListingID", enquiry.ListingID);
+
+                    conn.Open();
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception here or handle it as required
+                    throw;
+                }
+            }
+        }
+
 
         public async Task<ListingEnquiry> GetEnquiryListingIdAsync(int listingId)
         {

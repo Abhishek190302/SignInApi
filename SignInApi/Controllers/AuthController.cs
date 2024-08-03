@@ -38,7 +38,10 @@ namespace SignInApi.Controllers
             {
                 var user = response.User; // Ensure this is an ApplicationUsers object
                 var token = _tokenService.GenerateToken(user);
-                return Ok(new { Token = token, RedirectToUrl = response.RedirectToUrl });
+
+                string userType = user.IsVendor ? "Business" : (user.Consumer ? "Consumer" : "Unknown");
+
+                return Ok(new { Token = token, RedirectToUrl = response.RedirectToUrl, UserType= userType });
             }
 
             return Unauthorized(response);
@@ -72,7 +75,8 @@ namespace SignInApi.Controllers
                     Email = row["Email"].ToString(),
                     phone = row["PhoneNumber"].ToString(),
                     PasswordHash = row["PasswordHash"].ToString(),
-                    IsVendor = Convert.ToBoolean(row["IsVendor"])// Assuming you store the hash
+                    IsVendor = Convert.ToBoolean(row["IsVendor"]),
+                    Consumer = Convert.ToBoolean(row["Consumer"])
                 };
 
                 bool canSignIn = await CanSignInAsync(usr);

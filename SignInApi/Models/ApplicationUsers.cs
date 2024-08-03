@@ -7,5 +7,6 @@
         public string phone { get; set; }
         public string PasswordHash { get; set; }
         public bool IsVendor { get; set; }
+        public bool Consumer { get; set; }
     }
 }

@@ -51,24 +51,51 @@ namespace SignInApi.Controllers
                                 TimeZoneOfCountry = TimeZoneOfCountry,
                             };
 
-                            var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
+
+                            if (userProfileVM.File == null || userProfileVM.File.Length == 0)
+                                return BadRequest("No file uploaded.");
+
+                            var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                            if (!Directory.Exists(userDirectory))
+                            {
+                                Directory.CreateDirectory(userDirectory);
+                            }
+
+                            var imagePath = Path.Combine(userDirectory, userProfileVM.File.FileName);
+
+                            //var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
                             using (var stream = new FileStream(imagePath, FileMode.Create))
                             {
                                 await userProfileVM.File.CopyToAsync(stream);
                             }
-                            var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
+                            var imageUrl = $"/images/logos/{currentUserGuid}/{userProfileVM.File.FileName}";
+
+                            //var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
 
                             await _userNewProfileService.AddUserProfile(userProfile, imageUrl);
                             return Ok(new { Message = "Your profile created successfully.", Userprofile = userProfile });
                         }
                         else
                         {
-                            var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
+                            if (userProfileVM.File == null || userProfileVM.File.Length == 0)
+                                return BadRequest("No file uploaded.");
+
+                            var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                            if (!Directory.Exists(userDirectory))
+                            {
+                                Directory.CreateDirectory(userDirectory);
+                            }
+
+                            var imagePath   = Path.Combine(userDirectory, userProfileVM.File.FileName);
+
+                            //var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
                             using (var stream = new FileStream(imagePath, FileMode.Create))
                             {
                                 await userProfileVM.File.CopyToAsync(stream);
                             }
-                            var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
+
+                            var imageUrl = $"/images/logos/{currentUserGuid}/{userProfileVM.File.FileName}";
+                            //var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
 
                             // Update existing profile
                             userProfile.FirstName = userProfileVM.FirstName;
