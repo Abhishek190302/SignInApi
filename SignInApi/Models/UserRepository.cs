@@ -33,7 +33,8 @@ namespace SignInApi.Models
                             UserName = (string)row["UserName"],
                             IsVendor = (bool)row["IsVendor"],
                             PhoneNumber = (string)row["PhoneNumber"],
-                            Email = (string)row["Email"]
+                            Email = (string)row["Email"],
+                            BussinessCategory = (string)row["BusinessCategory"]
                             // Map other properties as needed
                         };
                     }

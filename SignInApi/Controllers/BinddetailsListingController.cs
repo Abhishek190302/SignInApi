@@ -68,10 +68,14 @@ namespace SignInApi.Controllers
                         var communicationdetails = await _binddetailsListing.GetListingByOwnerIdAsync(currentUserGuid);
                         if (communicationdetails != null)
                         {
-                            var Communication = await _binddetailsListing.GetCommunicationByListingIdAsync(communicationdetails.Listingid);
+                            var Communication = await _binddetailsListing.GetCommunicationByListingIdAsync(communicationdetails.Listingid, applicationUser.Email);
                             return Ok(Communication);
                         }
-                            
+                        else
+                        {
+                            var Communication = await _binddetailsListing.GetCommunicationRegisteremailAsync(applicationUser.Email);
+                            return Ok(Communication);
+                        } 
                     }
                     catch (Exception ex)
                     {
@@ -138,6 +142,12 @@ namespace SignInApi.Controllers
                         if (categoriesdetails != null)
                         {
                             var Categories = await _binddetailsListing.GetCategoryByListingIdAsync(categoriesdetails.Listingid);
+                            response = new { Category = Categories, AllCategories = categories };
+                            return Ok(response);
+                        }
+                        else
+                        {
+                            var Categories = await _binddetailsListing.GetCategoryByBussinessCategoryAsync(applicationUser.BussinessCategory);
                             response = new { Category = Categories, AllCategories = categories };
                             return Ok(response);
                         }

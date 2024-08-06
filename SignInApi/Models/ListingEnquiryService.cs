@@ -123,5 +123,55 @@ namespace SignInApi.Models
                 return null;
             }
         }
+
+        public async Task<ApplicationUserRequest> GetUserByUserNameAsync(string userName)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionMimUser))
+            {
+                var command = new SqlCommand("SELECT Id, Email, PhoneNumber, IsVendor FROM [dbo].[AspNetUsers] WHERE PhoneNumber = @UserName", conn);
+                command.Parameters.AddWithValue("@UserName", userName);
+                var dt = new DataTable();
+                var da = new SqlDataAdapter(command);
+                da.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    var row = dt.Rows[0];
+                    return new ApplicationUserRequest
+                    {
+                        Id = row["Id"].ToString(),
+                        Email = row["Email"].ToString(),
+                        PhoneNumber = row["PhoneNumber"].ToString(),
+                        IsVendor = Convert.ToBoolean(row["IsVendor"])
+                    };
+                }
+
+                return null;
+            }
+        }
+
+        public async Task<UserProfileRequest> GetProfileByOwnerGuidAsync(string ownerGuid)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionMimUser))
+            {
+                var command = new SqlCommand("SELECT Name, LastName, ImageUrl, Gender FROM [dbo].[UserProfile] WHERE OwnerGuid = @OwnerGuid", conn);
+                command.Parameters.AddWithValue("@OwnerGuid", ownerGuid);
+                var dt = new DataTable();
+                var da = new SqlDataAdapter(command);
+                da.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    var row = dt.Rows[0];
+                    return new UserProfileRequest
+                    {
+                        Name = row["Name"].ToString(),
+                        LastName = row["LastName"].ToString(),
+                        ImageUrl = row["ImageUrl"].ToString(),
+                        Gender = row["Gender"].ToString()
+                    };
+                }
+
+                return null;
+            }
+        }
     }
 }

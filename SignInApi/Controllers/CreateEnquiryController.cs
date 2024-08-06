@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SignInApi.Models;
+using System.Data.SqlClient;
+using System.Data;
 
 namespace SignInApi.Controllers
 {
@@ -35,6 +37,8 @@ namespace SignInApi.Controllers
                     try
                     {
                         string currentUserGuid = applicationUser.Id.ToString();
+                        var userprofile = await _listingEnquiryService.GetUserByUserNameAsync(userName);
+                        var userProfile = await _listingEnquiryService.GetProfileByOwnerGuidAsync(currentUserGuid);
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         if (listing != null)
                         {
@@ -50,26 +54,46 @@ namespace SignInApi.Controllers
                                 };
                             }
 
-                            
+
                             //listingEnquiry.FullName = userName?.Name;
                             //listingEnquiry.Email = user.Email;
                             //listingEnquiry.MobileNumber = user.PhoneNumber;
 
 
                             // Map the property for enquiry 
-                            enquiry.FullName = listingEnquiry.FullName;
-                            enquiry.MobileNumber= listingEnquiry.MobileNumber;
-                            enquiry.EnquiryTitle= listingEnquiry.EnquiryTitle;
-                            enquiry.Email= listingEnquiry.Email;
-                            enquiry.Message= listingEnquiry.Message;
+                            enquiry.FullName = userProfile.Name;
+                            enquiry.Email = userprofile.Email;
+                            enquiry.MobileNumber = userprofile.PhoneNumber;
+                            enquiry.EnquiryTitle = listingEnquiry.EnquiryTitle;
+                            enquiry.Message = listingEnquiry.Message;
 
-                            
+
                             await _listingEnquiryService.AddAsync(enquiry);
                             return Ok(new { Message = "Enquiry Sent Successfully", Response = enquiry });
 
                                 //await _listingEnquiryService.UpdateAsync(enquiry);
                                 //return Ok(new { Response = enquiry });
                             
+                        }
+                        else
+                        {
+                            
+                            var enquiry = new ListingEnquiry
+                            {
+                                OwnerGuid = currentUserGuid,
+                                IPAddress = HttpContext.Connection.RemoteIpAddress.ToString()
+                            };
+                            
+
+                            enquiry.FullName = userProfile.Name;
+                            enquiry.Email = userprofile.Email;
+                            enquiry.MobileNumber = userprofile.PhoneNumber;
+                            enquiry.EnquiryTitle = listingEnquiry.EnquiryTitle;
+                            enquiry.Message = listingEnquiry.Message;
+
+
+                            await _listingEnquiryService.AddAsync(enquiry);
+                            return Ok(new { Message = "Enquiry Sent Successfully", Response = enquiry });
                         }
                     }
                     catch (Exception ex)

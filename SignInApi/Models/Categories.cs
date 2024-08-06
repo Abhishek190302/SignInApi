@@ -12,4 +12,12 @@
         public string FifthCategoryID { get; set; }
         public string SixthCategoryID { get; set; }
     }
+
+    public class FirstBussinessCategories
+    {
+        public int ListingID { get; set; }
+        public string OwnerGuid { get; set; }
+        public string IPAddress { get; set; }
+        public string firstCategoryID { get; set; }
+    }
 }

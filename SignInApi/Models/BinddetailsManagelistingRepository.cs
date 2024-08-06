@@ -1,14 +1,18 @@
 ﻿using System.Data.SqlClient;
 using System.Data;
+using Twilio.Types;
+using Twilio.Rest.Api.V2010.Account.AvailablePhoneNumberCountry;
 
 namespace SignInApi.Models
 {
     public class BinddetailsManagelistingRepository
     {
         private readonly string _connectionString;
+        private readonly string _connectionUser;
         public BinddetailsManagelistingRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("MimListing");
+            _connectionUser = configuration.GetConnectionString("MimUser");
         }
 
         public async Task<Listing> GetListingByOwnerIdAsync(string ownerId)
@@ -64,12 +68,28 @@ namespace SignInApi.Models
             }
         }
 
-        public async Task<Communication> GetCommunicationByListingIdAsync(int listingId)
+        public async Task<Communication> GetCommunicationByListingIdAsync(int listingid , string emailid)
         {
+            string email = string.Empty;
+
+            using (SqlConnection conn = new SqlConnection(_connectionUser))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT Email FROM [dbo].[AspNetUsers] WHERE Email = @Email", conn);
+                cmd.Parameters.AddWithValue("@Email", emailid);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if(dt.Rows.Count>0)
+                {
+                    email = dt.Rows[0]["Email"].ToString();
+                }
+            }
+            
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Communication] WHERE ListingID = @ListingID", conn);
-                cmd.Parameters.AddWithValue("@ListingID", listingId);
+                cmd.Parameters.AddWithValue("@ListingID", listingid);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
@@ -81,7 +101,7 @@ namespace SignInApi.Models
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         ListingID = row.Field<int?>("ListingID") ?? 0,
-                        Email = row.Field<string>("Email") ?? string.Empty,
+                        Email = email,
                         Mobile = row.Field<string>("Mobile") ?? string.Empty,
                         Telephone = row.Field<string>("Telephone") ?? string.Empty,
                         TelephoneSecond = row.Field<string>("TelephoneSecond") ?? string.Empty,
@@ -90,6 +110,57 @@ namespace SignInApi.Models
                         TollFree = row.Field<string>("TollFree") ?? string.Empty,
                         IPAddress = row.Field<string>("IPAddress") ?? string.Empty,
                         Language = row.Field<string>("Language") ?? string.Empty,
+
+                    };
+                }
+                return null;
+            }
+        }
+
+
+        public async Task<Communication> GetCommunicationRegisteremailAsync(string emailid)
+        {
+            string email = string.Empty;
+            string phonenumber = string.Empty;
+
+            using (SqlConnection conn = new SqlConnection(_connectionUser))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT Email,PhoneNumber FROM [dbo].[AspNetUsers] WHERE Email = @Email", conn);
+                cmd.Parameters.AddWithValue("@Email", emailid);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    email = dt.Rows[0]["Email"].ToString();
+                    phonenumber = dt.Rows[0]["PhoneNumber"].ToString();
+                }
+            }
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Communication]", conn);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+                    return new Communication
+                    {
+                        OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                        ListingID = row.Field<int?>("ListingID") ?? 0,
+                        Email = email,
+                        Mobile = phonenumber,
+                        Telephone = string.Empty,
+                        TelephoneSecond = string.Empty,
+                        Whatsapp = string.Empty,
+                        Website =  string.Empty,
+                        TollFree = string.Empty,
+                        IPAddress = string.Empty,
+                        Language = string.Empty,
 
                     };
                 }
@@ -158,6 +229,48 @@ namespace SignInApi.Models
                 return null;
             }
         }
+
+
+        public async Task<FirstBussinessCategories> GetCategoryByBussinessCategoryAsync(string bussinessCategory)
+        {
+            string bussinesscategory = string.Empty;
+
+            using (SqlConnection conn = new SqlConnection(_connectionUser))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT BusinessCategory FROM [dbo].[AspNetUsers] WHERE BusinessCategory = @BusinessCategory", conn);
+                cmd.Parameters.AddWithValue("@BusinessCategory", bussinessCategory);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    bussinesscategory = dt.Rows[0]["BusinessCategory"].ToString(); 
+                }
+            }
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Categories]", conn);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+                    return new FirstBussinessCategories
+                    {
+                        ListingID = row.Field<int?>("ListingID") ?? 0,
+                        OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                        IPAddress = row.Field<string>("IPAddress") ?? string.Empty,
+                        firstCategoryID = bussinesscategory
+                    };
+                }
+                return null;
+            }
+        }
+
 
         public async Task<Specialisation> GetSpecialisationByListingId(int listingId)
         {
@@ -365,27 +478,39 @@ namespace SignInApi.Models
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
+                SqlCommand cmd = new SqlCommand(
+                    "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID " +
+                    "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
+
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
                 adapter.Fill(dt);
+
                 if (dt.Rows.Count > 0)
                 {
-                    DataRow row = dt.Rows[0];
+                    DataRow firstRow = dt.Rows[0];
+
+                    // Assuming the ImagePath column contains a single concatenated string
+                    string concatenatedImagePaths = firstRow.Field<string>("ImagePath") ?? string.Empty;
+                    List<string> imagePaths = concatenatedImagePaths
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
                     return new OwnerImage
                     {
-                        OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
-                        Listingid = row.Field<int?>("ListingID") ?? 0,
-                        Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
-                        Designation = row.Field<string>("Designation") ?? string.Empty,
-                        OwnerName = row.Field<string>("OwnerName") ?? string.Empty,
-                        LastName = row.Field<string>("LastName") ?? string.Empty,
-                        craeteddate = row.Field<DateTime>("CreatedDate"),
-                        updateddate = row.Field<DateTime>("UpdateDate"),
-                        CountryId = row.Field<int?>("CountryID") ?? 0,
-                        StateId = row.Field<int?>("StateID") ?? 0,
+                        OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
+                        Listingid = firstRow.Field<int?>("ListingID") ?? 0,
+                        Imagepath = imagePaths,
+                        Designation = firstRow.Field<string>("Designation") ?? string.Empty,
+                        OwnerName = firstRow.Field<string>("OwnerName") ?? string.Empty,
+                        LastName = firstRow.Field<string>("LastName") ?? string.Empty,
+                        craeteddate = firstRow.Field<DateTime>("CreatedDate"),
+                        updateddate = firstRow.Field<DateTime>("UpdateDate"),
+                        CountryId = firstRow.Field<int?>("CountryID") ?? 0,
+                        StateId = firstRow.Field<int?>("StateID") ?? 0,
                     };
                 }
                 return null;
@@ -405,11 +530,19 @@ namespace SignInApi.Models
                 if (dt.Rows.Count > 0)
                 {
                     DataRow row = dt.Rows[0];
+
+                    string concatenatedImagePaths = row.Field<string>("ImagePath") ?? string.Empty;
+                    List<string> imagePaths = concatenatedImagePaths
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
                     return new GallerysImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
-                        Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                        Imagepath = imagePaths,
                         Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),

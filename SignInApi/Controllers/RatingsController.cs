@@ -124,11 +124,13 @@ namespace SignInApi.Controllers
 
         private async Task AddRatingAsync(Rating rating)
         {
+            bool approvedbyAdmin = false;
+
             // Implement the method to add rating using ADO.NET
             using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("MimListing")))
             {
                 await conn.OpenAsync();
-                using (SqlCommand cmd = new SqlCommand("INSERT INTO [listing].[Rating] (ListingID, OwnerGuid, IPAddress, Date, Time, Ratings, Comment) VALUES (@ListingID, @OwnerGuid, @IPAddress, @Date, @Time, @Ratings, @Comment)", conn))
+                using (SqlCommand cmd = new SqlCommand("INSERT INTO [listing].[Rating] (ListingID, OwnerGuid, IPAddress, Date, Time, Ratings, Comment, ApprovedByAdmin) VALUES (@ListingID, @OwnerGuid, @IPAddress, @Date, @Time, @Ratings, @Comment, @ApprovedByAdmin)", conn))
                 {
                     cmd.Parameters.AddWithValue("@ListingID", rating.ListingID);
                     cmd.Parameters.AddWithValue("@OwnerGuid", rating.OwnerGuid);
@@ -137,6 +139,7 @@ namespace SignInApi.Controllers
                     cmd.Parameters.AddWithValue("@Time", rating.Time);
                     cmd.Parameters.AddWithValue("@Ratings", rating.Ratings);
                     cmd.Parameters.AddWithValue("@Comment", rating.Comment);
+                    cmd.Parameters.AddWithValue("@ApprovedByAdmin", approvedbyAdmin);
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
