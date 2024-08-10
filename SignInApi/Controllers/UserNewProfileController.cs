@@ -29,7 +29,6 @@ namespace SignInApi.Controllers
             if (user.Identity.IsAuthenticated)
             {
                 var userName = user.Identity.Name;
-
                 var applicationUser = await _userService.GetUserByUserName(userName);
                 if (applicationUser != null)
                 {
@@ -37,6 +36,7 @@ namespace SignInApi.Controllers
                     {
                         string currentUserGuid = applicationUser.Id.ToString();
                         var userProfile = await _userNewProfileService.GetProfileByOwnerGuid(currentUserGuid);
+
                         if (userProfile == null)
                         {
                             // Create new profile
@@ -51,7 +51,6 @@ namespace SignInApi.Controllers
                                 TimeZoneOfCountry = TimeZoneOfCountry,
                             };
 
-
                             if (userProfileVM.File == null || userProfileVM.File.Length == 0)
                                 return BadRequest("No file uploaded.");
 
@@ -62,15 +61,13 @@ namespace SignInApi.Controllers
                             }
 
                             var imagePath = Path.Combine(userDirectory, userProfileVM.File.FileName);
-
-                            //var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
                             using (var stream = new FileStream(imagePath, FileMode.Create))
                             {
                                 await userProfileVM.File.CopyToAsync(stream);
                             }
                             var imageUrl = $"/images/logos/{currentUserGuid}/{userProfileVM.File.FileName}";
 
-                            //var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
+                            userProfile.ImageUrl = imageUrl;
 
                             await _userNewProfileService.AddUserProfile(userProfile, imageUrl);
                             return Ok(new { Message = "Your profile created successfully.", Userprofile = userProfile });
@@ -86,25 +83,22 @@ namespace SignInApi.Controllers
                                 Directory.CreateDirectory(userDirectory);
                             }
 
-                            var imagePath   = Path.Combine(userDirectory, userProfileVM.File.FileName);
-
-                            //var imagePath = Path.Combine("wwwroot/images/logos/", userProfileVM.File.FileName);
+                            var imagePath = Path.Combine(userDirectory, userProfileVM.File.FileName);
                             using (var stream = new FileStream(imagePath, FileMode.Create))
                             {
                                 await userProfileVM.File.CopyToAsync(stream);
                             }
 
                             var imageUrl = $"/images/logos/{currentUserGuid}/{userProfileVM.File.FileName}";
-                            //var imageUrl = $"/images/logos/" + userProfileVM.File.FileName + "";
 
                             // Update existing profile
                             userProfile.FirstName = userProfileVM.FirstName;
                             userProfile.LastName = userProfileVM.LastName;
                             userProfile.Gender = userProfileVM.Gender;
-                            //userProfile.UpdatedDate = DateTime.UtcNow;
+                            userProfile.ImageUrl = imageUrl;
 
                             await _userNewProfileService.UpdateUserProfile(userProfile, imageUrl);
-                            return Ok(new { Message = "Your profile Updated successfully.", Userprofile = userProfile });
+                            return Ok(new { Message = "Your profile updated successfully.", Userprofile = userProfile });
                         }
 
                     }

@@ -37,9 +37,6 @@
         public bool SelfCreated { get; set; }
         public bool ClaimedListing { get; set; }
         public WorkingTime Workingtime { get; set; }
-        public Bookmarks bookmark { get; set; }
-        public LikeDislike likedislike { get; set;}
-        public Subscribes subscribe { get; set; }
         public string Description { get; set; }
         public List<Review> Reviews { get; set; }
     }

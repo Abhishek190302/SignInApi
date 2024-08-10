@@ -29,12 +29,12 @@ namespace SignInApi.Models
                         DataRow row = dt.Rows[0];
                         return new ApplicationUser
                         {
-                            Id = Guid.Parse(row["Id"].ToString()),
-                            UserName = (string)row["UserName"],
-                            IsVendor = (bool)row["IsVendor"],
-                            PhoneNumber = (string)row["PhoneNumber"],
-                            Email = (string)row["Email"],
-                            BussinessCategory = (string)row["BusinessCategory"]
+                            Id = row["Id"] != DBNull.Value ? Guid.Parse(row["Id"].ToString()) : Guid.Empty,
+                            UserName = row["UserName"] != DBNull.Value ? (string)row["UserName"] : string.Empty,
+                            IsVendor = row["IsVendor"] != DBNull.Value ? (bool)row["IsVendor"] : false,
+                            PhoneNumber = row["PhoneNumber"] != DBNull.Value ? (string)row["PhoneNumber"] : string.Empty,
+                            Email = row["Email"] != DBNull.Value ? (string)row["Email"] : string.Empty,
+                            BussinessCategory = row["BusinessCategory"] != DBNull.Value ? (string)row["BusinessCategory"] : string.Empty
                             // Map other properties as needed
                         };
                     }

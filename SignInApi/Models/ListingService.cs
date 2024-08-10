@@ -101,74 +101,6 @@ namespace SignInApi.Models
                             listing.Area = Area;
                             listing.FullAddress = FullAddress;
 
-                            ////Fetch Bookmark Details
-                            listing.bookmark = await GetBookmarkByListingAndUserIdAsync(listingId, userGuid);
-                            bool recordNotFound = listing.bookmark == null;
-                            if (recordNotFound)
-                            {
-                                listing.bookmark = new Bookmarks
-                                {
-                                    ListingID = listingId,
-                                    UserGuid = userGuid,
-                                    Mobile = listing?.Mobile, 
-                                    Email = listing?.Email,
-                                    VisitDate = DateTime.Now,
-                                    VisitTime = DateTime.Now,
-                                    Bookmark = true,
-                                };
-                                await AddAsync(listing.bookmark);
-                            }
-                            else
-                            {
-                                listing.bookmark.Bookmark = !listing.bookmark.Bookmark;
-                                await UpdateAsync(listing.bookmark);
-                            }
-
-                            //Fetch Like and Dislike Details
-                            listing.likedislike = await GetLikeDislikeByListingAndUserIdAsync(listingId, userGuid);
-                            bool recordNotFoundlikeanddislike = listing.likedislike == null;
-                            if (recordNotFoundlikeanddislike)
-                            {
-                                listing.likedislike = new LikeDislike
-                                {
-                                    ListingID = listingId,
-                                    UserGuid = userGuid,
-                                    Mobile = listing?.Mobile, 
-                                    Email = listing?.Email,  
-                                    VisitDate = DateTime.Now,
-                                    VisitTime = DateTime.Now,
-                                    LikeandDislike = true,
-                                };
-                                await AddLikeDislikeAsync(listing.likedislike);
-                            }
-                            else
-                            {
-                                listing.likedislike.LikeandDislike = !listing.likedislike.LikeandDislike;
-                                await UpdateLikeDislikeAsync(listing.likedislike);
-                            }
-
-                            // Fetch Subscribe Details
-                            listing.subscribe = await GetSubscribeByListingAndUserIdAsync(listingId, userGuid);
-                            bool recordNotFoundsubscribe = listing.subscribe == null;
-                            if (recordNotFoundsubscribe)
-                            {
-                                listing.subscribe = new Subscribes
-                                {
-                                    ListingID = listingId,
-                                    UserGuid = userGuid,
-                                    Mobile = listing?.Mobile, 
-                                    Email = listing?.Email,
-                                    VisitDate = DateTime.Now,
-                                    VisitTime = DateTime.Now,
-                                    Subscribe = true,
-                                };
-                                await AddSubscribeAsync(listing.subscribe);
-                            }
-                            else
-                            {
-                                listing.subscribe.Subscribe = !listing.subscribe.Subscribe;
-                                await UpdateSubscribeAsync(listing.subscribe);
-                            }
 
                             // Fetch Review Details
                             listing.Reviews = await GetReviews(listingId);
@@ -653,13 +585,12 @@ namespace SignInApi.Models
         }
 
         #region BookMark
-        public async Task<Bookmarks> GetBookmarkByListingAndUserIdAsync(int listingId, string userGuid)
+        public async Task<Bookmarks> GetBookmarkByListingAndUserIdAsync(int listingId)
         {
             using (SqlConnection conn = new SqlConnection(_connectionStringAudit))
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [audit].[Bookmarks] WHERE ListingID = @ListingID AND UserGuid = @UserGuid", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [audit].[Bookmarks] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
-                cmd.Parameters.AddWithValue("@UserGuid", userGuid);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dataTable = new DataTable();
@@ -715,13 +646,12 @@ namespace SignInApi.Models
         #endregion
 
         #region Like and Dislike
-        public async Task<LikeDislike> GetLikeDislikeByListingAndUserIdAsync(int listingId, string userGuid)
+        public async Task<LikeDislike> GetLikeDislikeByListingAndUserIdAsync(int listingId)
         {
             using (SqlConnection conn = new SqlConnection(_connectionStringAudit))
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [audit].[LikeDislike] WHERE ListingID = @ListingID AND UserGuid = @UserGuid", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [audit].[LikeDislike] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
-                cmd.Parameters.AddWithValue("@UserGuid", userGuid);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dataTable = new DataTable();
@@ -776,13 +706,12 @@ namespace SignInApi.Models
         #endregion
 
         #region Subscribe
-        public async Task<Subscribes> GetSubscribeByListingAndUserIdAsync(int listingId, string userGuid)
+        public async Task<Subscribes> GetSubscribeByListingAndUserIdAsync(int listingId)
         {
             using (SqlConnection conn = new SqlConnection(_connectionStringAudit))
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [audit].[Subscribes] WHERE ListingID = @ListingID AND UserGuid = @UserGuid", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [audit].[Subscribes] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
-                cmd.Parameters.AddWithValue("@UserGuid", userGuid);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();

@@ -178,6 +178,13 @@ namespace SignInApi.Models
             return await GetListingActivitiesAsync("SELECT * FROM [audit].[Subscribes] WHERE ListingID = @ListingID", listingId);
         }
 
+        public async Task<IEnumerable<ListingActivity>> GetEnquiryByListingIdAsync(int listingId)
+        {
+            return await GetEnquiryListingActivitiesAsync("SELECT * FROM [dbo].[Enquiry] WHERE ListingID = @ListingId ORDER BY CreatedDate DESC", listingId);
+        }
+
+
+
         public async Task<IEnumerable<ListingActivity>> GetListingActivitiesAsync(string query, int listingId)
         {
             var activities = new List<ListingActivity>();
@@ -201,6 +208,31 @@ namespace SignInApi.Models
             }
             return activities;
         }
+
+        public async Task<IEnumerable<ListingActivity>> GetEnquiryListingActivitiesAsync(string query, int listingId)
+        {
+            var activities = new List<ListingActivity>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@ListingID", listingId);
+                var da = new SqlDataAdapter(command);
+                var dt = new DataTable();
+                await connection.OpenAsync();
+                da.Fill(dt);
+                foreach (DataRow row in dt.Rows)
+                {
+                    activities.Add(new ListingActivity
+                    {
+                        UserGuid = row["OwnerGuid"].ToString(),
+                        VisitDate = Convert.ToDateTime(row["CreatedDate"])
+                    });
+                }
+            }
+            return activities;
+        }
+
 
         public async Task<Profile> GetProfileByOwnerGuidAsync(string ownerGuid)
         {
@@ -250,6 +282,11 @@ namespace SignInApi.Models
             {
                 activityText = "Subscribed";
                 listingActivities = await GetSubscribersByListingIdAsync(listing.Listingid);
+            }
+            else if (activityType == Constantss.Enquiry)
+            {
+                activityText = "Enquiry";
+                listingActivities = await GetEnquiryByListingIdAsync(listing.Listingid);
             }
 
             if (listingActivities == null) return null;

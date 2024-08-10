@@ -7,6 +7,7 @@
         public string ListingUrl { get; set; }
         public string CityName { get; set; }
         public string LocalityName { get; set; }
+        public string category { get; set; }
     }
 
     public class ListingSearch

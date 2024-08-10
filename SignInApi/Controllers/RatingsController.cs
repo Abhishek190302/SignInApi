@@ -38,32 +38,77 @@ namespace SignInApi.Controllers
                     {
                         string currentUserGuid = applicationUser.Id.ToString();
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
-
-                        if (ratingDetailVM.Ratings <= 0 || string.IsNullOrEmpty(ratingDetailVM.Comment))
+                        if (listing != null)
                         {
-                            return BadRequest(new { message = "Rating & Comment Required." });
+                            if (ratingDetailVM.Ratings <= 0 || string.IsNullOrEmpty(ratingDetailVM.Comment))
+                            {
+                                return BadRequest(new { message = "Rating & Comment Required." });
+                            }
+
+                            DateTime timeZoneDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"));
+                            string time = timeZoneDate.ToString("hh:mm tt");
+                            DateTime currentTime = DateTime.Parse(time, System.Globalization.CultureInfo.CurrentCulture);
+
+                            try
+                            {
+                                var userProfile = await GetProfileByOwnerGuidAsync(currentUserGuid);
+                                var rating = await GetRatingByListingIdAndOwnerId(listing.Listingid, currentUserGuid);
+                                bool recordNotFound = rating == null;
+
+                                if (recordNotFound)
+                                {
+                                    rating = new Rating
+                                    {
+                                        ListingID = listing.Listingid,
+                                        OwnerGuid = currentUserGuid,
+                                        IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
+                                        Date = currentTime,
+                                        Time = currentTime,
+                                        Ratings = ratingDetailVM.Ratings,
+                                        Comment = ratingDetailVM.Comment,
+                                        ImageUrl = userProfile.ImageUrl
+                                    };
+
+                                    await AddRatingAsync(rating);
+                                }
+                                else
+                                {
+                                    rating.Ratings = ratingDetailVM.Ratings;
+                                    rating.Comment = ratingDetailVM.Comment;
+                                    await UpdateRatingAsync(rating);
+                                }
+
+                                var listReviews = await GetReviewsAsync(listing.Listingid);
+                                return Ok(new { message = "Thank you for submitting your review.", reviews = listReviews });
+                            }
+                            catch (Exception exc)
+                            {
+                                return StatusCode(500, new { message = exc.Message + exc.InnerException?.ToString() });
+                            }
+
                         }
-
-                        DateTime timeZoneDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"));
-                        string time = timeZoneDate.ToString("hh:mm tt");
-                        DateTime currentTime = DateTime.Parse(time, System.Globalization.CultureInfo.CurrentCulture);
-
-                        try
+                        else
                         {
-                            var rating = await GetRatingByListingIdAndOwnerId(listing.Listingid, currentUserGuid);
+
+                            DateTime timeZoneDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"));
+                            string time = timeZoneDate.ToString("hh:mm tt");
+                            DateTime currentTime = DateTime.Parse(time, System.Globalization.CultureInfo.CurrentCulture);
+                            var userProfile = await GetProfileByOwnerGuidAsync(currentUserGuid);
+                            var rating = await GetRatingByListingIdAndOwnerId(ratingDetailVM.companyID, currentUserGuid);
                             bool recordNotFound = rating == null;
 
                             if (recordNotFound)
                             {
                                 rating = new Rating
                                 {
-                                    ListingID = listing.Listingid,
+                                    ListingID = ratingDetailVM.companyID,
                                     OwnerGuid = currentUserGuid,
                                     IPAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
                                     Date = currentTime,
                                     Time = currentTime,
                                     Ratings = ratingDetailVM.Ratings,
-                                    Comment = ratingDetailVM.Comment
+                                    Comment = ratingDetailVM.Comment,
+                                    ImageUrl = userProfile.ImageUrl
                                 };
 
                                 await AddRatingAsync(rating);
@@ -75,12 +120,8 @@ namespace SignInApi.Controllers
                                 await UpdateRatingAsync(rating);
                             }
 
-                            var listReviews = await GetReviewsAsync(listing.Listingid);
+                            var listReviews = await GetReviewsAsync(ratingDetailVM.companyID);
                             return Ok(new { message = "Thank you for submitting your review.", reviews = listReviews });
-                        }
-                        catch (Exception exc)
-                        {
-                            return StatusCode(500, new { message = exc.Message + exc.InnerException?.ToString() });
                         }
                     }
                     catch (Exception EX)
@@ -162,32 +203,108 @@ namespace SignInApi.Controllers
             }
         }
 
+        //private async Task<List<Rating>> GetReviewsAsync(int listingId,string imageUrl)
+        //{
+            
+        //    var reviews = new List<Rating>();
+        //    using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("MimListing")))
+        //    {
+        //        await conn.OpenAsync();
+        //        SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Rating] WHERE ListingID = @ListingID", conn);
+        //        cmd.Parameters.AddWithValue("@ListingID", listingId);
+        //        SqlDataAdapter da = new SqlDataAdapter(cmd);
+        //        DataTable dt = new DataTable();
+        //        da.Fill(dt);
+        //        foreach (DataRow row in dt.Rows)
+        //        {
+        //            reviews.Add(new Rating
+        //            {
+        //                ListingID = (int)row["ListingID"],
+        //                OwnerGuid = (string)row["OwnerGuid"],
+        //                IPAddress = row["IPAddress"].ToString(),
+        //                Date = (DateTime)row["Date"],
+        //                Time = (DateTime)row["Time"],
+        //                Ratings = (int)row["Ratings"],
+        //                Comment = row["Comment"].ToString(),
+        //                ImageUrl = imageUrl
+        //            });
+        //        }
+        //    }
+        //    return reviews;
+        //}
+
+
+
         private async Task<List<Rating>> GetReviewsAsync(int listingId)
         {
-            var reviews = new List<Rating>();
-            using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("MimListing")))
+            try
             {
-                await conn.OpenAsync();
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Rating] WHERE ListingID = @ListingID", conn);
-                cmd.Parameters.AddWithValue("@ListingID", listingId);
-                SqlDataAdapter da = new SqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                da.Fill(dt);
-                foreach (DataRow row in dt.Rows)
+                var reviews = new List<Rating>();
+
+                using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("MimListing")))
                 {
-                    reviews.Add(new Rating
+                    await conn.OpenAsync();
+                    SqlCommand cmd = new SqlCommand(@"
+                    SELECT r.ListingID, r.OwnerGuid, r.IPAddress, r.Date, r.Time, r.Ratings, r.Comment, up.ImageUrl
+                    FROM [listing].[Rating] r
+                    LEFT JOIN [MimUser_Api].[dbo].[UserProfile] up ON r.OwnerGuid = up.OwnerGuid
+                    WHERE r.ListingID = @ListingID", conn);
+                    cmd.Parameters.AddWithValue("@ListingID", listingId);
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+
+                    foreach (DataRow row in dt.Rows)
                     {
-                        ListingID = (int)row["ListingID"],
-                        OwnerGuid = (string)row["OwnerGuid"],
-                        IPAddress = row["IPAddress"].ToString(),
-                        Date = (DateTime)row["Date"],
-                        Time = (DateTime)row["Time"],
-                        Ratings = (int)row["Ratings"],
-                        Comment = row["Comment"].ToString()
-                    });
+                        reviews.Add(new Rating
+                        {
+                            ListingID = (int)row["ListingID"],
+                            OwnerGuid = (string)row["OwnerGuid"],
+                            IPAddress = row["IPAddress"].ToString(),
+                            Date = (DateTime)row["Date"],
+                            Time = (DateTime)row["Time"],
+                            Ratings = (int)row["Ratings"],
+                            Comment = row["Comment"].ToString(),
+                            ImageUrl = row["ImageUrl"] == DBNull.Value ? null : row["ImageUrl"].ToString()
+                        });
+                    }
                 }
+
+                return reviews;
             }
-            return reviews;
+            catch(Exception ex)
+            {
+                throw;
+            }
+            
+        }
+
+
+        private async Task<UserProfileRequest> GetProfileByOwnerGuidAsync(string ownerGuid)
+        {
+            using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("MimUser")))
+            {
+                var command = new SqlCommand("SELECT Name, LastName, ImageUrl, Gender FROM [dbo].[UserProfile] WHERE OwnerGuid = @OwnerGuid", conn);
+                command.Parameters.AddWithValue("@OwnerGuid", ownerGuid);
+                var dt = new DataTable();
+                var da = new SqlDataAdapter(command);
+                da.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    var row = dt.Rows[0];
+                    return new UserProfileRequest
+                    {
+                        Name = row["Name"].ToString(),
+                        LastName = row["LastName"].ToString(),
+                        ImageUrl = row["ImageUrl"].ToString(),
+                        Gender = row["Gender"].ToString()
+                    };
+                }
+
+                return null;
+
+            }
         }
     }
 }

@@ -81,6 +81,7 @@ namespace SignInApi.Controllers
                             var enquiry = new ListingEnquiry
                             {
                                 OwnerGuid = currentUserGuid,
+                                ListingID= listingEnquiry.companyID,
                                 IPAddress = HttpContext.Connection.RemoteIpAddress.ToString()
                             };
                             
@@ -90,7 +91,7 @@ namespace SignInApi.Controllers
                             enquiry.MobileNumber = userprofile.PhoneNumber;
                             enquiry.EnquiryTitle = listingEnquiry.EnquiryTitle;
                             enquiry.Message = listingEnquiry.Message;
-
+                            enquiry.ListingID = listingEnquiry.companyID;
 
                             await _listingEnquiryService.AddAsync(enquiry);
                             return Ok(new { Message = "Enquiry Sent Successfully", Response = enquiry });

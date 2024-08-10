@@ -6,13 +6,15 @@ namespace SignInApi.Models
 {
     public class SearchListingRepository
     {
-        private readonly string _connectionListing;
         private readonly string _connectionShared;
+        private readonly string _connectionListing;
+        private readonly string _connectionStringCat;
 
         public SearchListingRepository(IConfiguration configuration)
         {
-            _connectionListing = configuration.GetConnectionString("MimListing");
             _connectionShared = configuration.GetConnectionString("MimShared");
+            _connectionListing = configuration.GetConnectionString("MimListing");
+            _connectionStringCat = configuration.GetConnectionString("MimCategories");
         }
 
         public async Task<IList<ListingSearch>> GetApprovedListings()
@@ -46,6 +48,62 @@ namespace SignInApi.Models
 
             return listings;
         }
+
+        public async Task<bool> IsListingInCategory(int listingId, string searchText)
+        {
+            var subCategories = await GetSubcategory(listingId);
+            return subCategories.Any(sub => sub.Name.ToLower().Contains(searchText));
+        }
+
+        public async Task<List<string>> GetSubcategoryNames(int listingId)
+        {
+            var subCategories = await GetSubcategory(listingId);
+            return subCategories.Select(sub => sub.Name).ToList();
+        }
+
+        public async Task<List<SubCategory>> GetSubcategory(int listingId)
+        {
+            List<SubCategory> subCategories = new List<SubCategory>();
+            using (SqlConnection conn = new SqlConnection(_connectionListing))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Categories] WHERE ListingID = @ListingId", conn);
+                cmd.Parameters.AddWithValue("@ListingId", listingId);
+                await conn.OpenAsync();
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        int subCategoryId = Convert.ToInt32(row["SecondCategoryID"]);
+                        string subCategoryName = await GetSecondCategoryById(subCategoryId);
+                        if (!string.IsNullOrEmpty(subCategoryName))
+                        {
+                            subCategories.Add(new SubCategory
+                            {
+                                Id = subCategoryId,
+                                Name = subCategoryName
+                            });
+                        }
+                    }
+                }
+            }
+
+            return subCategories;
+        }
+
+        private async Task<string> GetSecondCategoryById(int categoryId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionStringCat))
+            {
+                await conn.OpenAsync();
+                var cmd = new SqlCommand("SELECT Name FROM [cat].[SecondCategory] WHERE SecondCategoryID = @SecondCategoryID", conn);
+                cmd.Parameters.AddWithValue("@SecondCategoryID", categoryId);
+                return (await cmd.ExecuteScalarAsync())?.ToString();
+            }
+        }
+
 
 
         public async Task<IList<LocalitySearch>> GetLocalitiesByLocalityIds(string[] localityIds)
