@@ -25,7 +25,7 @@ namespace SignInApi.Models
             _logger = logger;
         }
 
-        public async Task<List<ListingResult>> GetListings()
+        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int subCategoryid)
         {
             var listings = new List<ListingResult>();
             try
@@ -34,8 +34,15 @@ namespace SignInApi.Models
                 {
                     await conn.OpenAsync();
 
+                    int offset = (pageNumber - 1) * pageSize;
+
                     // Fetch listings
-                    var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] ORDER BY ListingID", conn);
+                    var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
+
+                    listingCmd.Parameters.AddWithValue("@Offset", offset);
+                    listingCmd.Parameters.AddWithValue("@PageSize", pageSize);
+                    listingCmd.Parameters.AddWithValue("@SubCategoryId", subCategoryid);
+
                     using (SqlDataReader reader = await listingCmd.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
@@ -50,6 +57,7 @@ namespace SignInApi.Models
                                 CompanyName = reader.GetString(reader.GetOrdinal("CompanyName")),
                                 Url = reader.GetString(reader.GetOrdinal("ListingURL")),
                                 ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
+                                ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing"))
                             };

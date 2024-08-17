@@ -44,12 +44,12 @@ namespace SignInApi.Controllers
                         var userprofile = await _listingEnquiryService.GetUserByUserNameAsync(userName);
                         if (listing != null)
                         {
-                            var subscribe = await GetSubscribeByListingAndUserIdAsync(listing.Listingid,currentUserGuid);
+                            var subscribe = await GetSubscribeByListingAndUserIdAsync(subscribeVM.companyID, currentUserGuid);
                             if (subscribe == null)
                             {
                                 subscribe = new Subscribes
                                 {
-                                    ListingID = listing.Listingid,
+                                    ListingID = subscribeVM.companyID,
                                     UserGuid = currentUserGuid,
                                     Mobile = userprofile.PhoneNumber,
                                     Email = userprofile.Email,

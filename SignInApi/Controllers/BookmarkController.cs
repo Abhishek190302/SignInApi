@@ -46,12 +46,12 @@ namespace SignInApi.Controllers
                         var userprofile = await _listingEnquiryService.GetUserByUserNameAsync(userName);
                         if (listing != null)
                         {
-                            var bookmark = await GetBookmarkByListingAndUserIdAsync(listing.Listingid, currentUserGuid);
+                            var bookmark = await GetBookmarkByListingAndUserIdAsync(bookmarkVM.companyID, currentUserGuid);
                             if (bookmark == null)
                             {
                                 bookmark = new Bookmarks
                                 {
-                                    ListingID = listing.Listingid,
+                                    ListingID = bookmarkVM.companyID,
                                     UserGuid = currentUserGuid,
                                     Mobile = userprofile.PhoneNumber,
                                     Email = userprofile.Email,

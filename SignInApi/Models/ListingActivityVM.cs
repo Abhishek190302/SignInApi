@@ -2,6 +2,7 @@
 {
     public class ListingActivityVM
     {
+        public int Listingid { get; set; }
         public string OwnerGuid { get; set; }
         public string CompanyName { get; set; }
         public string UserName { get; set; }

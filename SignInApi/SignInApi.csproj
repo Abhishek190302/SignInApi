@@ -21,4 +21,12 @@
     <Folder Include="wwwroot\images\logos\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="E:\MyinteriorMart_WebAPI\SignInApi\SignInApi\Controllers\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="E:\MyinteriorMart_WebAPI\SignInApi\SignInApi\Controllers\.editorconfig" />
+  </ItemGroup>
+
 </Project>

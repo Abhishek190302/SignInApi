@@ -23,11 +23,11 @@ namespace SignInApi.Controllers
 
         [HttpGet] 
         [Route("GetCategoriesListing")]
-        public async Task<IActionResult> GetCategoriesListing()
+        public async Task<IActionResult> GetCategoriesListing(int pageNumber = 1, int pageSize = 10 ,int subCategoryid = 94)
         {   
             try
             {
-                var listings = await _listingService.GetListings();
+                var listings = await _listingService.GetListings(pageNumber, pageSize, subCategoryid);
                 return Ok(listings);
 
             }

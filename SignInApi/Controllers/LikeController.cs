@@ -44,12 +44,12 @@ namespace SignInApi.Controllers
                         var userprofile = await _listingEnquiryService.GetUserByUserNameAsync(userName);
                         if (listing != null)
                         {
-                            var like = await GetLikeDislikeByListingAndUserIdAsync(listing.Listingid, currentUserGuid);
+                            var like = await GetLikeDislikeByListingAndUserIdAsync(likeVM.companyID, currentUserGuid);
                             if (like == null)
                             {
                                 like = new LikeDislike
                                 {
-                                    ListingID = listing.Listingid,
+                                    ListingID = likeVM.companyID,
                                     UserGuid = currentUserGuid,
                                     Mobile = userprofile.PhoneNumber,
                                     Email = userprofile.Email,

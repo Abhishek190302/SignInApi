@@ -149,7 +149,7 @@ namespace SignInApi.Controllers
                         var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         if (listing != null)
                         {
-                            // Retrieve countries and states
+                            // Retrieve countries and states 
                             var countries = new List<Country>();
                             using (var con = new SqlConnection(_connectionCountryString))
                             {
@@ -195,6 +195,7 @@ namespace SignInApi.Controllers
                                 }
                             }
 
+
                             var ownerimage = await _imageuploadRepository.GetOwnerImageByListingIdAsync(listing.Listingid);
                             bool recordNotFound = ownerimage == null;
 
@@ -204,24 +205,27 @@ namespace SignInApi.Controllers
                                 return BadRequest("All fields are compulsory!");
                             }
 
-                            int existingImageCount = ownerimage?.Imagepath?.Count ?? 0;
-                            int newImageCount = model.File.Count;
-                            int totalImageCount = existingImageCount + newImageCount;
+                            // Count existing images
+                            var existingImages = ownerimage?.Imagepath?.FirstOrDefault()?.Split(',').ToList() ?? new List<string>();
+                            int existingImageCount = existingImages.Count;
 
-                            // Validate number of files
-                            if (totalImageCount > 3)
+                            // Validate if the new upload exceeds the maximum allowed images
+                            int maxImages = 3;
+                            int newImagesCount = model.File.Count;
+
+                            if (existingImageCount + newImagesCount > maxImages)
                             {
-                                return BadRequest("You can only upload up to three images.");
+                                int allowedCount = maxImages - existingImageCount;
+                                return BadRequest($"You have already uploaded {existingImageCount} image(s). You can upload {allowedCount} more image(s).");
                             }
 
-                            // Upload images and construct comma-separated image URL string
+                            // Proceed with uploading the images
                             var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
                             if (!Directory.Exists(userDirectory))
                             {
                                 Directory.CreateDirectory(userDirectory);
                             }
 
-                            var imageUrls = new List<string>();
                             foreach (var file in model.File)
                             {
                                 var imagePath = Path.Combine(userDirectory, file.FileName);
@@ -230,12 +234,14 @@ namespace SignInApi.Controllers
                                 {
                                     await file.CopyToAsync(stream);
                                 }
+
                                 var imageUrl = $"/images/logos/{currentUserGuid}/{file.FileName}";
-                                imageUrls.Add(imageUrl);
+                                existingImages.Add(imageUrl);
                             }
 
-                            var imageUrlsCommaSeparated = string.Join(",", imageUrls);
+                            var imageUrlsCommaSeparated = string.Join(",", existingImages);
 
+                            // Now proceed with database operations as you have already implemented.
                             using (var connection = new SqlConnection(_connectionString))
                             {
                                 SqlCommand command;
@@ -270,7 +276,7 @@ namespace SignInApi.Controllers
                                         FirstName = model.FirstName,
                                         LastName = model.LastName,
                                         Designation = model.Designation,
-                                        ImageUrls = imageUrls,
+                                        ImageUrls = existingImages, // Return all images
                                         CountryID = model.CountryID,
                                         StateID = model.StateID
                                     };
@@ -541,13 +547,18 @@ namespace SignInApi.Controllers
                         {
                             var gallery = await _imageuploadRepository.GetGallerysImageByListingIdAsync(listing.Listingid);
 
-                            int existingImageCount = gallery?.Imagepath?.Count ?? 0;
-                            int newImageCount = File.Count;
-                            int totalImageCount = existingImageCount + newImageCount;
+                            // Split the existing ImagePath into a list and count the existing images
+                            var existingImages = gallery?.Imagepath?.FirstOrDefault()?.Split(',').ToList() ?? new List<string>();
+                            int existingImageCount = existingImages.Count;
 
-                            if (totalImageCount > 20)
+                            // Validate if the new upload exceeds the maximum allowed images
+                            int maxImages = 20;
+                            int newImagesCount = File.Count;
+
+                            if (existingImageCount + newImagesCount > maxImages)
                             {
-                                return BadRequest("Total number of images cannot exceed 20.");
+                                int allowedCount = maxImages - existingImageCount;
+                                return BadRequest($"You have already uploaded {existingImageCount} image(s). You can upload {allowedCount} more image(s).");
                             }
 
                             var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
@@ -571,8 +582,10 @@ namespace SignInApi.Controllers
                                 }
                             }
 
+                            // Combine new image URLs with existing ones
                             var newImagePaths = string.Join(",", imageUrls);
-                            //string updatedImagePaths = gallery == null ? newImagePaths : $"{gallery.Imagepath},{newImagePaths}";
+                            var existingImagePaths = string.Join(",", existingImages);
+                            var updatedImagePaths = gallery == null ? newImagePaths : $"{existingImagePaths},{newImagePaths}";
 
                             using (var connection = new SqlConnection(_connectionString))
                             {
@@ -582,7 +595,7 @@ namespace SignInApi.Controllers
                                     command = new SqlCommand("INSERT INTO [dbo].[GalleryImage] (OwnerGuid,ListingID,ImagePath,ImageTitle,CreatedDate,UpdateDate) VALUES (@OwnerGuid,@ListingID,@ImagePath,@ImageTitle,GETDATE(),GETDATE())", connection);
                                     command.Parameters.AddWithValue("@OwnerGuid", currentUserGuid);
                                     command.Parameters.AddWithValue("@ListingID", listing.Listingid);
-                                    command.Parameters.AddWithValue("@ImagePath", newImagePaths);
+                                    command.Parameters.AddWithValue("@ImagePath", updatedImagePaths);
                                     command.Parameters.AddWithValue("@ImageTitle", imageTitle);
                                 }
                                 else
@@ -590,14 +603,24 @@ namespace SignInApi.Controllers
                                     command = new SqlCommand("UPDATE [dbo].[GalleryImage] SET OwnerGuid=@OwnerGuid,ImagePath=@ImagePath,ImageTitle=@ImageTitle,UpdateDate=GETDATE() WHERE ListingID=@ListingID", connection);
                                     command.Parameters.AddWithValue("@OwnerGuid", currentUserGuid);
                                     command.Parameters.AddWithValue("@ListingID", listing.Listingid);
-                                    command.Parameters.AddWithValue("@ImagePath", newImagePaths);
+                                    command.Parameters.AddWithValue("@ImagePath", updatedImagePaths);
                                     command.Parameters.AddWithValue("@ImageTitle", imageTitle);
                                 }
                                 connection.Open();
                                 await command.ExecuteNonQueryAsync();
                             }
 
-                            return Ok(new { Message = "Gallery images uploaded successfully", Listing = listing.Listingid, OwnerGuidId = currentUserGuid, ImageUrls = imageUrls, ImageTitle = imageTitle });
+                            // Return the response with all image paths
+                            var allImagePaths = updatedImagePaths.Split(',').ToList();
+
+                            return Ok(new
+                            {
+                                Message = "Gallery images uploaded successfully",
+                                Listing = listing.Listingid,
+                                OwnerGuidId = currentUserGuid,
+                                ImageUrls = allImagePaths,
+                                ImageTitle = imageTitle
+                            });
                         }
                     }
                     catch (Exception ex)

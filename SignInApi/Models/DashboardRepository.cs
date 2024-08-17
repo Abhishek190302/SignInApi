@@ -488,8 +488,9 @@ namespace SignInApi.Models
 
             var listingActivityVMs = listingActivities.Select(x => new ListingActivityVM
             {
+                Listingid = x.Listingid,
                 OwnerGuid = x.UserGuid,
-                CompanyName = listing.CompanyName,
+                CompanyName = x.CompanyName,
                 VisitDate = x.VisitDate.ToString(Constantss.dateFormat1),
                 ActivityType = activityType,
                 ActivityText = activityText,
@@ -512,17 +513,20 @@ namespace SignInApi.Models
 
         public async Task<IEnumerable<ListingActivity>> GetLikesByOwnerIdAsync(string OwnerId)
         {
-            return await GetOwnerActivitiesAsync("SELECT * FROM [audit].[LikeDislike] WHERE UserGuid = @UserGuid", OwnerId);
+            //return await GetOwnerActivitiesAsync("SELECT [LikeDislike].ListingID, [Listing].CompanyName,[LikeDislike].UserGuid,[LikeDislike].VisitDate FROM [AuditTrail].[audit].[LikeDislike] INNER JOIN [MimListing].[listing].[Listing] ON [AuditTrail].[audit].[LikeDislike].ListingID=[MimListing].[listing].[Listing].ListingID WHERE [AuditTrail].[audit].[LikeDislike].UserGuid = @UserGuid", OwnerId);
+            return await GetOwnerActivitiesAsync("SELECT [LikeDislike].ListingID, [Listing].CompanyName,[LikeDislike].UserGuid,[LikeDislike].VisitDate FROM [AuditTrail_Api].[audit].[LikeDislike] INNER JOIN [MimListing_Api].[listing].[Listing] ON [AuditTrail_Api].[audit].[LikeDislike].ListingID=[MimListing_Api].[listing].[Listing].ListingID WHERE [AuditTrail_Api].[audit].[LikeDislike].UserGuid = @UserGuid", OwnerId);
         }
 
         public async Task<IEnumerable<ListingActivity>> GetBookmarksByOwnerIdAsync(string OwnerId)
         {
-            return await GetOwnerActivitiesAsync("SELECT * FROM [audit].[Bookmarks] WHERE UserGuid = @UserGuid", OwnerId);
+            //return await GetOwnerActivitiesAsync("SELECT [Bookmarks].ListingID, [Listing].CompanyName,[Bookmarks].UserGuid,[Bookmarks].VisitDate FROM [AuditTrail].[audit].[Bookmarks] INNER JOIN [MimListing].[listing].[Listing] ON [AuditTrail].[audit].[Bookmarks].ListingID=[MimListing].[listing].[Listing].ListingID WHERE [AuditTrail].[audit].[Bookmarks].UserGuid = @UserGuid", OwnerId);
+            return await GetOwnerActivitiesAsync("SELECT [Bookmarks].ListingID, [Listing].CompanyName,[Bookmarks].UserGuid,[Bookmarks].VisitDate FROM [AuditTrail_Api].[audit].[Bookmarks] INNER JOIN [MimListing_Api].[listing].[Listing] ON [AuditTrail_Api].[audit].[Bookmarks].ListingID=[MimListing_Api].[listing].[Listing].ListingID WHERE [AuditTrail_Api].[audit].[Bookmarks].UserGuid = @UserGuid", OwnerId);
         }
 
         public async Task<IEnumerable<ListingActivity>> GetSubscribersByOwnerIdAsync(string OwnerId)
         {
-            return await GetOwnerActivitiesAsync("SELECT * FROM [audit].[Subscribes] WHERE UserGuid = @UserGuid", OwnerId);
+            //return await GetOwnerActivitiesAsync("SELECT [Subscribes].ListingID, [Listing].CompanyName,[Subscribes].UserGuid,[Subscribes].VisitDate FROM [AuditTrail].[audit].[Subscribes] INNER JOIN [MimListing].[listing].[Listing] ON [AuditTrail].[audit].[Subscribes].ListingID=[MimListing].[listing].[Listing].ListingID WHERE [AuditTrail].[audit].[Subscribes].UserGuid = @UserGuid", OwnerId);
+            return await GetOwnerActivitiesAsync("SELECT [Subscribes].ListingID, [Listing].CompanyName,[Subscribes].UserGuid,[Subscribes].VisitDate FROM [AuditTrail_Api].[audit].[Subscribes] INNER JOIN [MimListing_Api].[listing].[Listing] ON [AuditTrail_Api].[audit].[Subscribes].ListingID=[MimListing_Api].[listing].[Listing].ListingID WHERE [AuditTrail_Api].[audit].[Subscribes].UserGuid = @UserGuid", OwnerId);
         }
 
         public async Task<IEnumerable<ListingActivity>> GetOwnerActivitiesAsync(string query, string OwnerId)
@@ -541,6 +545,8 @@ namespace SignInApi.Models
                 {
                     activities.Add(new ListingActivity
                     {
+                        Listingid = Convert.ToInt32(row["ListingID"]),
+                        CompanyName = row["CompanyName"].ToString(),
                         UserGuid = row["UserGuid"].ToString(),
                         VisitDate = Convert.ToDateTime(row["VisitDate"])
                     });

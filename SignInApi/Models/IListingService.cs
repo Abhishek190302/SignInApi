@@ -2,6 +2,7 @@
 {
     public interface IListingService
     {
-        Task<List<ListingResult>> GetListings();
+
+        Task<List<ListingResult>> GetListings(int pageNumber, int pageSize,int subCategoryid);
     }
 }

@@ -8,6 +8,7 @@
         public string CompanyName { get; set; }
         //public string SubCategory { get; set; }
         public List<SubCategory> SubCategory { get; set; }
+        public string ListingKeyword { get; set; }
         public string ListingUrl { get; set; }
         public string Turnover { get; set; }
         public string YearOfEstablishment { get; set; }
