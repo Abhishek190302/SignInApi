@@ -70,6 +70,14 @@ namespace SignInApi.Controllers
             return Ok(Paymentmode);
         }
 
+        [HttpPost]
+        [Route("GetKeywordDetails")]
+        public async Task<IActionResult> GetKeywordDetails(KeywordVM keywordVM)
+        {
+            var Keyword = await GetKeywordsByListingIdAsync(keywordVM.companyID);
+            return Ok(Keyword);
+        }
+
 
         private async Task<OwnerImage> GetOwnerImageByListingIdAsync(int companyID)
         {
@@ -287,6 +295,33 @@ namespace SignInApi.Controllers
                 }
             }
             return paymentmode;
+        }
+
+        private async Task<List<Keyword>> GetKeywordsByListingIdAsync(int listingId)
+        {
+            var keywords = new List<Keyword>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand("SELECT ListingID, OwnerGuid, SeoKeyword FROM [dbo].[Keyword] WHERE ListingID = @ListingID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@ListingID", listingId);
+                    var da = new SqlDataAdapter(cmd);
+                    var dt = new DataTable();
+                    da.Fill(dt);
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        keywords.Add(new Keyword
+                        {
+                            ListingID = (int)row["ListingID"],
+                            OwnerGuid = (string)row["OwnerGuid"],
+                            SeoKeyword = (string)row["SeoKeyword"]
+                        });
+                    }
+                }
+            }
+
+            return keywords;
         }
     }
 }

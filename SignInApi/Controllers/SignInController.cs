@@ -32,47 +32,103 @@ namespace SignInApi.Controllers
             _configuration = configuration;
             
         }
-   
+
+        //[HttpPost]
+        //[Route("SendOtp")]
+        //public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
+        //{
+
+        //    var Token = Request.Headers["Authorization"].ToString();
+
+        //    if (Token.Contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"))
+        //    {
+        //        string otp = GenerateOtp();
+        //        string message = $"{otp} is your One-Time Password, valid for 10 minutes only. Please do not share your OTP with anyone.";
+        //        string Otp = "";
+        //        string result = "";
+
+        //        if (request.CountryCode == "+91")
+        //        {
+        //            SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser"));
+        //            if (con.State == ConnectionState.Closed) { con.Open(); }
+        //            SqlCommand cmd = new SqlCommand("usp_signOtpformobile", con);
+        //            cmd.CommandType = CommandType.StoredProcedure;
+        //            cmd.Parameters.AddWithValue("@contrycode", request.CountryCode);
+        //            cmd.Parameters.AddWithValue("@mobile", request.Mobile);
+        //            cmd.Parameters.AddWithValue("@otp", otp);
+        //            cmd.Parameters.AddWithValue("@response", message);
+        //            cmd.ExecuteNonQuery();
+        //            con.Close();
+
+        //            return Ok(new { Message = "OTP is sent to your registered " + request.Mobile + " mobile number.", Otp = otp });
+        //        }
+        //        else
+        //        {
+        //            return Ok(new { Message = "OTP not sent to your registered mobile number."});
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // Token does not contain the specified substring, return 401 Unauthorized
+        //        Response.StatusCode = StatusCodes.Status401Unauthorized;
+        //        return BadRequest( Response.WriteAsync("Unauthorized: Invalid token."));
+        //    }    
+        //}
+
+
         [HttpPost]
         [Route("SendOtp")]
         public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
         {
-            
-            var Token = Request.Headers["Authorization"].ToString();
+            var token = Request.Headers["Authorization"].ToString();
 
-            if (Token.Contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"))
+            if (token.Contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"))
             {
                 string otp = GenerateOtp();
                 string message = $"{otp} is your One-Time Password, valid for 10 minutes only. Please do not share your OTP with anyone.";
-                string Otp = "";
-                string result = "";
+                using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
+                {
+                    string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={request.Mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
+                    HttpResponseMessage response = await client.GetAsync("http://" + apiUrl);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseContent = await response.Content.ReadAsStringAsync();
+                    }
+                    else
+                    {
+                        return StatusCode((int)response.StatusCode, "Failed to send OTP via SMS.");
+                    }
+                }
 
                 if (request.CountryCode == "+91")
                 {
-                    SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser"));
-                    if (con.State == ConnectionState.Closed) { con.Open(); }
-                    SqlCommand cmd = new SqlCommand("usp_signOtpformobile", con);
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@contrycode", request.CountryCode);
-                    cmd.Parameters.AddWithValue("@mobile", request.Mobile);
-                    cmd.Parameters.AddWithValue("@otp", otp);
-                    cmd.Parameters.AddWithValue("@response", message);
-                    cmd.ExecuteNonQuery();
-                    con.Close();
+                    using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser")))
+                    {
+                        if (con.State == ConnectionState.Closed) { con.Open(); }
+                        using (SqlCommand cmd = new SqlCommand("usp_signOtpformobile", con))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@contrycode", request.CountryCode);
+                            cmd.Parameters.AddWithValue("@mobile", request.Mobile);
+                            cmd.Parameters.AddWithValue("@otp", otp);
+                            cmd.Parameters.AddWithValue("@response", message);
+                            cmd.ExecuteNonQuery();
+                        }
+                        con.Close();
+                    }
 
                     return Ok(new { Message = "OTP is sent to your registered " + request.Mobile + " mobile number.", Otp = otp });
                 }
                 else
                 {
-                    return Ok(new { Message = "OTP not sent to your registered mobile number."});
+                    return Ok(new { Message = "OTP not sent to your registered mobile number." });
                 }
             }
             else
             {
-                // Token does not contain the specified substring, return 401 Unauthorized
                 Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return BadRequest( Response.WriteAsync("Unauthorized: Invalid token."));
-            }    
+                return BadRequest("Unauthorized: Invalid token.");
+            }
         }
 
 
@@ -118,59 +174,132 @@ namespace SignInApi.Controllers
 
 
 
+        //[HttpPost]
+        //[Route("ForgotPassword")]
+        //public IActionResult ForgotPassword([FromBody] ForgotpasswordRequest request)
+        //{
+        //    var Token = Request.Headers["Authorization"].ToString();
+
+        //    if (Token.Contains("df2359eb-79c7-45b9-9c02-2c66e289d5c8"))
+        //    {
+        //        string otp = GenerateOtp();
+        //        string message = $"{otp} is your One-Time Password, valid for 10 minutes only. Please do not share your OTP with anyone.";
+        //        string OTP = "";
+
+        //        SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser"));
+        //        if (con.State == ConnectionState.Closed) { con.Open(); }
+        //        SqlCommand cmd = new SqlCommand("usp_Verifymobile", con);
+        //        cmd.CommandType = CommandType.StoredProcedure;
+        //        cmd.Parameters.AddWithValue("@mobile", request.Mobile);
+        //        SqlDataAdapter da = new SqlDataAdapter(cmd);
+        //        DataTable dt = new DataTable();
+        //        da.Fill(dt);
+        //        con.Close();
+        //        if (dt.Rows.Count > 0)
+        //        {
+        //            var mobile = dt.Rows[0]["PhoneNumber"].ToString();
+        //            if (mobile != null)
+        //            {
+        //                SqlConnection con1 = new SqlConnection(_configuration.GetConnectionString("MimUser"));
+        //                if (con1.State == ConnectionState.Closed) { con1.Open(); }
+        //                SqlCommand cmd1 = new SqlCommand("usp_storeOtpdetails", con1);
+        //                cmd1.CommandType = CommandType.StoredProcedure;
+        //                cmd1.Parameters.AddWithValue("@mobile", mobile);
+        //                cmd1.Parameters.AddWithValue("@otp", otp);
+        //                cmd1.Parameters.AddWithValue("@response", message);
+        //                cmd1.ExecuteNonQuery();
+        //                con1.Close();
+        //                return Ok(new { Message = "OTP is sent to your registered mobile number.", OTP = otp });
+        //            }
+        //            else
+        //            {
+        //                return BadRequest(new ForgotpasswordResponse { Message = "OTP not send registered mobile number" });
+        //            }
+        //        }
+        //        else
+        //        {
+        //            return BadRequest(new ForgotpasswordResponse { Message = "Mobile number does not match register mobile number" });
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // Token does not contain the specified substring, return 401 Unauthorized
+        //        Response.StatusCode = StatusCodes.Status401Unauthorized;
+        //        return BadRequest( Response.WriteAsync("Unauthorized: Invalid token."));
+        //    }      
+        //}
+
         [HttpPost]
         [Route("ForgotPassword")]
-        public IActionResult ForgotPassword([FromBody] ForgotpasswordRequest request)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotpasswordRequest request)
         {
-            var Token = Request.Headers["Authorization"].ToString();
+            var token = Request.Headers["Authorization"].ToString();
 
-            if (Token.Contains("df2359eb-79c7-45b9-9c02-2c66e289d5c8"))
+            if (token.Contains("df2359eb-79c7-45b9-9c02-2c66e289d5c8"))
             {
                 string otp = GenerateOtp();
                 string message = $"{otp} is your One-Time Password, valid for 10 minutes only. Please do not share your OTP with anyone.";
-                string OTP = "";
 
-                SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser"));
-                if (con.State == ConnectionState.Closed) { con.Open(); }
-                SqlCommand cmd = new SqlCommand("usp_Verifymobile", con);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@mobile", request.Mobile);
-                SqlDataAdapter da = new SqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                da.Fill(dt);
-                con.Close();
-                if (dt.Rows.Count > 0)
+                using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("MimUser")))
                 {
-                    var mobile = dt.Rows[0]["PhoneNumber"].ToString();
-                    if (mobile != null)
+                    if (con.State == ConnectionState.Closed) { con.Open(); }
+                    using (SqlCommand cmd = new SqlCommand("usp_Verifymobile", con))
                     {
-                        SqlConnection con1 = new SqlConnection(_configuration.GetConnectionString("MimUser"));
-                        if (con1.State == ConnectionState.Closed) { con1.Open(); }
-                        SqlCommand cmd1 = new SqlCommand("usp_storeOtpdetails", con1);
-                        cmd1.CommandType = CommandType.StoredProcedure;
-                        cmd1.Parameters.AddWithValue("@mobile", mobile);
-                        cmd1.Parameters.AddWithValue("@otp", otp);
-                        cmd1.Parameters.AddWithValue("@response", message);
-                        cmd1.ExecuteNonQuery();
-                        con1.Close();
-                        return Ok(new { Message = "OTP is sent to your registered mobile number.", OTP = otp });
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@mobile", request.Mobile);
+                        using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                        {
+                            DataTable dt = new DataTable();
+                            da.Fill(dt);
+
+                            if (dt.Rows.Count > 0)
+                            {
+                                var mobile = dt.Rows[0]["PhoneNumber"].ToString();
+                                if (!string.IsNullOrEmpty(mobile))
+                                {
+                                    using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
+                                    {
+                                        string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
+                                        HttpResponseMessage response = await client.GetAsync("http://" + apiUrl);
+                                        if (!response.IsSuccessStatusCode)
+                                        {
+                                            return StatusCode((int)response.StatusCode, "Failed to send OTP via SMS.");
+                                        }
+                                    }
+
+                                    using (SqlConnection con1 = new SqlConnection(_configuration.GetConnectionString("MimUser")))
+                                    {
+                                        if (con1.State == ConnectionState.Closed) { con1.Open(); }
+                                        using (SqlCommand cmd1 = new SqlCommand("usp_storeOtpdetails", con1))
+                                        {
+                                            cmd1.CommandType = CommandType.StoredProcedure;
+                                            cmd1.Parameters.AddWithValue("@mobile", mobile);
+                                            cmd1.Parameters.AddWithValue("@otp", otp);
+                                            cmd1.Parameters.AddWithValue("@response", message);
+                                            cmd1.ExecuteNonQuery();
+                                        }
+                                    }
+                                    return Ok(new { Message = "OTP is sent to your registered mobile number.", OTP = otp });
+                                }
+                                else
+                                {
+                                    return BadRequest(new ForgotpasswordResponse { Message = "OTP not sent to registered mobile number" });
+                                }
+                            }
+                            else
+                            {
+                                return BadRequest(new ForgotpasswordResponse { Message = "Mobile number does not match registered mobile number" });
+                            }
+                        }
                     }
-                    else
-                    {
-                        return BadRequest(new ForgotpasswordResponse { Message = "OTP not send registered mobile number" });
-                    }
-                }
-                else
-                {
-                    return BadRequest(new ForgotpasswordResponse { Message = "Mobile number does not match register mobile number" });
                 }
             }
             else
             {
                 // Token does not contain the specified substring, return 401 Unauthorized
                 Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return BadRequest( Response.WriteAsync("Unauthorized: Invalid token."));
-            }      
+                return BadRequest("Unauthorized: Invalid token.");
+            }
         }
 
         [HttpPost]

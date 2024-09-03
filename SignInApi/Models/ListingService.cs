@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.WebUtilities;
+using EllipticCurve.Utils;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SignInApi.Models
 {
@@ -25,7 +27,7 @@ namespace SignInApi.Models
             _logger = logger;
         }
 
-        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int subCategoryid)
+        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int subCategoryid, string cityName = null)
         {
             var listings = new List<ListingResult>();
             try
@@ -37,11 +39,26 @@ namespace SignInApi.Models
                     int offset = (pageNumber - 1) * pageSize;
 
                     // Fetch listings
-                    var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
+                    //var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
+
+                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
+                    //    "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
+                    //    "ON l.ListingID = a.ListingID JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
+                    //    "WHERE c.SecondCategoryID = @SubCategoryId  AND(@CityName IS NULL OR city.Name = @CityName) " +
+                    //    "ORDER BY l.ListingID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+
+                    var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
+                       "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
+                       "ON l.ListingID = a.ListingID JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                       "WHERE c.SecondCategoryID = @SubCategoryId  AND(@CityName IS NULL OR city.Name = @CityName) " +
+                       "ORDER BY l.ListingID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+
+
 
                     listingCmd.Parameters.AddWithValue("@Offset", offset);
                     listingCmd.Parameters.AddWithValue("@PageSize", pageSize);
                     listingCmd.Parameters.AddWithValue("@SubCategoryId", subCategoryid);
+                    listingCmd.Parameters.AddWithValue("@CityName", cityName);
 
                     using (SqlDataReader reader = await listingCmd.ExecuteReaderAsync())
                     {
