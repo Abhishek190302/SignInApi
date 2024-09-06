@@ -79,16 +79,16 @@ namespace SignInApi.Controllers
                         }
                         catch (Exception ex)
                         {
-
+                            return StatusCode(500, new { StatusCode = 500, Message = "An error occurred while saving the complaint.", Details = ex.Message });
                         }
                     }
-                    return NotFound("User Not Found");
+                    return NotFound(new { StatusCode = 500, Message = "User not found." });
                 }
-                return Unauthorized();
+                return Unauthorized(new { StatusCode = 500, Message = "User is not authenticated." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { StatusCode = 500, Message = "An unexpected error occurred.", Details = ex.Message });
             }
         }
 

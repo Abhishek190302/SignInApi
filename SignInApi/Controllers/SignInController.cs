@@ -361,7 +361,7 @@ namespace SignInApi.Controllers
         {
             try
             {
-                var fromAddress = new MailAddress("contact@myinteriormart.com", "Hamza");
+                var fromAddress = new MailAddress("contact@myinteriormart.com", "MyinteriorMart");
                 var toAddress = new MailAddress(emailAddress);
                 var fromPassword = "Hamza@313#";
                 var subject = "Your OTP Code";

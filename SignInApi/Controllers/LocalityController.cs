@@ -40,7 +40,7 @@ namespace SignInApi.Controllers
             }
             catch (Exception exc)
             {
-                return StatusCode(500, exc.Message);
+                return StatusCode(500, new { StatusCode = 500, Message = "An unexpected error occurred while creating the locality.", Details = exc.Message });
             }
         }
 
