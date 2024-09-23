@@ -59,7 +59,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("MyAllowSpecificOrigins",
         policy =>
         {
-            policy.WithOrigins("https://frontend.myinteriormart.com", "http://localhost:3000", "https://myinteriormart.com").AllowAnyMethod().AllowAnyHeader(); // Add localhost:3000 to the allowed origins
+            policy.WithOrigins("https://frontend.myinteriormart.com", "http://localhost:3000", "https://myinteriormart.com", "https://www.myinteriormart.com").AllowAnyMethod().AllowAnyHeader(); // Add localhost:3000 to the allowed origins
         });     
 });
 

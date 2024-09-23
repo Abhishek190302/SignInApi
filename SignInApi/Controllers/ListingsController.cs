@@ -37,5 +37,23 @@ namespace SignInApi.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
+
+        [HttpGet]
+        [Route("GetCategoriesListingid")]
+        public async Task<IActionResult> GetCategoriesListingid(int subCategoryid = 94, string cityName = null, int liistingId = 10881)
+        {
+            try
+            {
+                var listings = await _listingService.GetListingsid(subCategoryid, cityName, liistingId);
+                return Ok(listings);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while getting categories listing");
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }

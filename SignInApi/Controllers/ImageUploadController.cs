@@ -833,7 +833,7 @@ namespace SignInApi.Controllers
 
         [HttpPost]
         [Route("UploadCertificateImage")]
-        public async Task<IActionResult> UploadCertificateImage([FromForm] GalleryImage galleryImage)
+        public async Task<IActionResult> UploadCertificateImage([FromForm] List<IFormFile> File, [FromForm] string imageTitle)
         {
             var user = _httpContextAccessor.HttpContext.User;
             if (user.Identity.IsAuthenticated)
@@ -850,88 +850,93 @@ namespace SignInApi.Controllers
                         if (listing != null)
                         {
                             var certificate = await _imageuploadRepository.GetCertificateImageByListingIdAsync(listing.Listingid);
-                            bool recordNotFound = certificate == null;
+                            var existingImages = certificate?.Imagepath?.FirstOrDefault()?.Split(',').ToList() ?? new List<string>();
+                            int existingImageCount = existingImages.Count;
 
-                            if (recordNotFound)
+                            // Validate if the new upload exceeds the maximum allowed images
+                            int maxImages = 20;
+                            int newImagesCount = File.Count;
+
+                            if (existingImageCount + newImagesCount > maxImages)
                             {
-                                if (galleryImage.File == null || galleryImage.File.Length == 0)
-                                    return BadRequest("No file uploaded.");
+                                int allowedCount = maxImages - existingImageCount;
+                                return BadRequest($"You have already uploaded {existingImageCount} image(s). You can upload {allowedCount} more image(s).");
+                            }
 
-                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
-                                if (!Directory.Exists(userDirectory))
+                            var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                            if (!Directory.Exists(userDirectory))
+                            {
+                                Directory.CreateDirectory(userDirectory);
+                            }
+
+                            var imageUrls = new List<string>();
+                            foreach (var file in File)
+                            {
+                                if (file.Length > 0)
                                 {
-                                    Directory.CreateDirectory(userDirectory);
+                                    var imagePath = Path.Combine(userDirectory, file.FileName);
+                                    using (var stream = new FileStream(imagePath, FileMode.Create))
+                                    {
+                                        await file.CopyToAsync(stream);
+                                    }
+                                    var imageUrl = $"/images/logos/{currentUserGuid}/{file.FileName}";
+                                    imageUrls.Add(imageUrl);
                                 }
+                            }
 
-                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
-
-                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
-
-                                using (var stream = new FileStream(imagePath, FileMode.Create))
+                            // Combine new image URLs with existing ones
+                            var newImagePaths = string.Join(",", imageUrls);
+                            var existingImagePaths = string.Join(",", existingImages);
+                            var updatedImagePaths = certificate == null ? newImagePaths : $"{existingImagePaths},{newImagePaths}";
+                            using (var connection = new SqlConnection(_connectionString))
+                            {
+                                SqlCommand command;
+                                if (certificate == null)
                                 {
-                                    await galleryImage.File.CopyToAsync(stream);
-                                }
-                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
-
-                                using (var connection = new SqlConnection(_connectionString))
-                                {
-                                    var command = new SqlCommand("INSERT INTO [dbo].[CertificationDetail] (OwnerGuid,ListingID,ImagePath,ImageTitle,CreatedDate,UpdateDate) VALUES (@OwnerGuid,@ListingID,@ImagePath,@ImageTitle,GETDATE(),GETDATE())", connection);
+                                    command = new SqlCommand("INSERT INTO [dbo].[CertificationDetail] (OwnerGuid,ListingID,ImagePath,ImageTitle,CreatedDate,UpdateDate) VALUES (@OwnerGuid,@ListingID,@ImagePath,@ImageTitle,GETDATE(),GETDATE())", connection);
                                     command.Parameters.AddWithValue("@OwnerGuid", currentUserGuid);
                                     command.Parameters.AddWithValue("@ListingID", listing.Listingid);
-                                    command.Parameters.AddWithValue("@ImagePath", imageUrl);
-                                    command.Parameters.AddWithValue("@ImageTitle", galleryImage.ImageTitle);
-                                    connection.Open();
-                                    await command.ExecuteNonQueryAsync();
+                                    command.Parameters.AddWithValue("@ImagePath", updatedImagePaths);
+                                    command.Parameters.AddWithValue("@ImageTitle", imageTitle);
                                 }
-
-                                return Ok(new { Message = "CertificateImage Upload successfully", Listing = listing.Listingid, OwnerGuidId = currentUserGuid, ImageUrl = imageUrl, ImageTitle = galleryImage.ImageTitle });
+                                else
+                                {
+                                    command = new SqlCommand("Update [dbo].[CertificationDetail] Set OwnerGuid='" + currentUserGuid + "',ImagePath='" + updatedImagePaths + "',ImageTitle='" + imageTitle + "',CreatedDate=GETDATE(),UpdateDate=GETDATE() Where ListingID='" + listing.Listingid + "'", connection);
+                                }
+                                connection.Open();
+                                await command.ExecuteNonQueryAsync();
                             }
-                            else
+
+                            // Return the response with all image paths
+                            var allImagePaths = updatedImagePaths.Split(',').ToList();
+
+                            return Ok(new
                             {
-                                if (galleryImage.File == null || galleryImage.File.Length == 0)
-                                    return BadRequest("No file uploaded.");
-
-                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
-                                if (!Directory.Exists(userDirectory))
-                                {
-                                    Directory.CreateDirectory(userDirectory);
-                                }
-
-                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
-
-                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
-
-                                using (var stream = new FileStream(imagePath, FileMode.Create))
-                                {
-                                    await galleryImage.File.CopyToAsync(stream);
-                                }
-
-                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
-
-                                using (var connection = new SqlConnection(_connectionString))
-                                {
-                                    var command = new SqlCommand("Update [dbo].[CertificationDetail] Set OwnerGuid='" + currentUserGuid + "',ImagePath='" + imageUrl + "',ImageTitle='" + galleryImage.ImageTitle + "',CreatedDate=GETDATE(),UpdateDate=GETDATE() Where ListingID='" + listing.Listingid + "'", connection);
-                                    connection.Open();
-                                    await command.ExecuteNonQueryAsync();
-                                }
-
-                                return Ok(new { Message = "CertificateImage Update successfully", Listing = listing.Listingid, OwnerGuidId = currentUserGuid, ImageUrl = imageUrl, ImageTitle = galleryImage.ImageTitle });
-                            } 
+                                Message = "Certificate images uploaded successfully",
+                                Listing = listing.Listingid,
+                                OwnerGuidId = currentUserGuid,
+                                ImageUrls = allImagePaths,
+                                ImageTitle = imageTitle
+                            });
                         }
                     }
                     catch (Exception ex)
                     {
-                        throw;
+                        return StatusCode(500, new
+                        {
+                            Message = "An error occurred while uploading images.",
+                            Error = ex.Message
+                        });
                     }
                 }
-                return NotFound("User not found");
+                return NotFound(new { Message = "User not found" });
             }
-            return Unauthorized();
+            return Unauthorized(new { Message = "User is not authenticated" });
         }
 
         [HttpPost]
         [Route("UploadClientImage")]
-        public async Task<IActionResult> UploadClientImage([FromForm] GalleryImage galleryImage)
+        public async Task<IActionResult> UploadClientImage([FromForm] List<IFormFile> File, [FromForm] string imageTitle)
         {
             var user = _httpContextAccessor.HttpContext.User;
             if (user.Identity.IsAuthenticated)
@@ -949,84 +954,88 @@ namespace SignInApi.Controllers
                         {
 
                             var client = await _imageuploadRepository.GetClientImageByListingIdAsync(listing.Listingid);
-                            bool recordNotFound = client == null;
+                            var existingImages = client?.Imagepath?.FirstOrDefault()?.Split(',').ToList() ?? new List<string>();
+                            int existingImageCount = existingImages.Count;
 
-                            if (recordNotFound)
+                            // Validate if the new upload exceeds the maximum allowed images
+                            int maxImages = 50;
+                            int newImagesCount = File.Count;
+
+                            if (existingImageCount + newImagesCount > maxImages)
                             {
-                                if (galleryImage.File == null || galleryImage.File.Length == 0)
-                                    return BadRequest("No file uploaded.");
+                                int allowedCount = maxImages - existingImageCount;
+                                return BadRequest($"You have already uploaded {existingImageCount} image(s). You can upload {allowedCount} more image(s).");
+                            }
 
-                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
-                                if (!Directory.Exists(userDirectory))
+                            var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
+                            if (!Directory.Exists(userDirectory))
+                            {
+                                Directory.CreateDirectory(userDirectory);
+                            }
+
+                            var imageUrls = new List<string>();
+                            foreach (var file in File)
+                            {
+                                if (file.Length > 0)
                                 {
-                                    Directory.CreateDirectory(userDirectory);
+                                    var imagePath = Path.Combine(userDirectory, file.FileName);
+                                    using (var stream = new FileStream(imagePath, FileMode.Create))
+                                    {
+                                        await file.CopyToAsync(stream);
+                                    }
+                                    var imageUrl = $"/images/logos/{currentUserGuid}/{file.FileName}";
+                                    imageUrls.Add(imageUrl);
                                 }
+                            }
 
-                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
+                            // Combine new image URLs with existing ones
+                            var newImagePaths = string.Join(",", imageUrls);
+                            var existingImagePaths = string.Join(",", existingImages);
+                            var updatedImagePaths = client == null ? newImagePaths : $"{existingImagePaths},{newImagePaths}";
 
-                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
-
-                                using (var stream = new FileStream(imagePath, FileMode.Create))
+                            using (var connection = new SqlConnection(_connectionString))
+                            {
+                                SqlCommand command;
+                                if (client == null)
                                 {
-                                    await galleryImage.File.CopyToAsync(stream);
-                                }
-
-                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
-
-                                using (var connection = new SqlConnection(_connectionString))
-                                {
-                                    var command = new SqlCommand("INSERT INTO [dbo].[ClientDetail] (OwnerGuid,ListingID,ImagePath,ImageTitle,CreatedDate,UpdateDate) VALUES (@OwnerGuid,@ListingID,@ImagePath,@ImageTitle,GETDATE(),GETDATE())", connection);
+                                    command = new SqlCommand("INSERT INTO [dbo].[ClientDetail] (OwnerGuid,ListingID,ImagePath,ImageTitle,CreatedDate,UpdateDate) VALUES (@OwnerGuid,@ListingID,@ImagePath,@ImageTitle,GETDATE(),GETDATE())", connection);
                                     command.Parameters.AddWithValue("@OwnerGuid", currentUserGuid);
                                     command.Parameters.AddWithValue("@ListingID", listing.Listingid);
-                                    command.Parameters.AddWithValue("@ImagePath", imageUrl);
-                                    command.Parameters.AddWithValue("@ImageTitle", galleryImage.ImageTitle);
-                                    connection.Open();
-                                    await command.ExecuteNonQueryAsync();
+                                    command.Parameters.AddWithValue("@ImagePath", updatedImagePaths);
+                                    command.Parameters.AddWithValue("@ImageTitle", imageTitle);
                                 }
-
-                                return Ok(new { Message = "ClientDetailImage Upload successfully", Listing = listing.Listingid, OwnerGuidId = currentUserGuid, ImageUrl = imageUrl, ImageTitle = galleryImage.ImageTitle });
+                                else
+                                {
+                                    command = new SqlCommand("Update [dbo].[ClientDetail] Set OwnerGuid='" + currentUserGuid + "',ImagePath='" + updatedImagePaths + "',ImageTitle='" + imageTitle + "',CreatedDate=GETDATE(),UpdateDate=GETDATE() Where ListingID='" + listing.Listingid + "'", connection);
+                                }
+                                connection.Open();
+                                await command.ExecuteNonQueryAsync();
                             }
-                            else
+                            // Return the response with all image paths
+                            var allImagePaths = updatedImagePaths.Split(',').ToList();
+
+                            return Ok(new
                             {
-                                if (galleryImage.File == null || galleryImage.File.Length == 0)
-                                    return BadRequest("No file uploaded.");
-
-                                var userDirectory = Path.Combine("wwwroot/images/logos", currentUserGuid);
-                                if (!Directory.Exists(userDirectory))
-                                {
-                                    Directory.CreateDirectory(userDirectory);
-                                }
-
-                                var imagePath = Path.Combine(userDirectory, galleryImage.File.FileName);
-
-                                //var imagePath = Path.Combine("wwwroot/images/logos", galleryImage.File.FileName);
-
-                                using (var stream = new FileStream(imagePath, FileMode.Create))
-                                {
-                                    await galleryImage.File.CopyToAsync(stream);
-                                }
-
-                                var imageUrl = $"/images/logos/{currentUserGuid}/{galleryImage.File.FileName}";
-
-                                using (var connection = new SqlConnection(_connectionString))
-                                {
-                                    var command = new SqlCommand("Update [dbo].[ClientDetail] Set OwnerGuid='" + currentUserGuid + "',ImagePath='" + imageUrl + "',ImageTitle='" + galleryImage.ImageTitle + "',CreatedDate=GETDATE(),UpdateDate=GETDATE() Where ListingID='" + listing.Listingid + "'", connection);
-                                    connection.Open();
-                                    await command.ExecuteNonQueryAsync();
-                                }
-
-                                return Ok(new { Message = "ClientDetailImage Update successfully", Listing = listing.Listingid, OwnerGuidId = currentUserGuid, ImageUrl = imageUrl, ImageTitle = galleryImage.ImageTitle });
-                            }
+                                Message = "Client images uploaded successfully",
+                                Listing = listing.Listingid,
+                                OwnerGuidId = currentUserGuid,
+                                ImageUrls = allImagePaths,
+                                ImageTitle = imageTitle
+                            });
                         }
                     }
                     catch (Exception ex)
                     {
-                        throw;
+                        return StatusCode(500, new
+                        {
+                            Message = "An error occurred while uploading images.",
+                            Error = ex.Message
+                        }); 
                     }
                 }
-                return NotFound("User not found");
+                return NotFound(new { Message = "User not found" });
             }
-            return Unauthorized();
+            return Unauthorized(new { Message = "User is not authenticated" });
         }
     }
 }

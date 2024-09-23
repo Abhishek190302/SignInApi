@@ -49,7 +49,7 @@ namespace SignInApi.Controllers
 
 
                             if (request.File == null || request.File.Length == 0)
-                                return BadRequest("No file uploaded.");
+                                return BadRequest(new { StatusCode = 400, Message = "No file uploaded." });
 
                             var imagePath = Path.Combine("wwwroot/images/logos", request.File.FileName);
 

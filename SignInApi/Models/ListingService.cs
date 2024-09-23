@@ -144,6 +144,119 @@ namespace SignInApi.Models
             return listings;
         }
 
+
+        public async Task<List<ListingResult>> GetListingsid(int subCategoryid, string cityName, int listingIds)
+        {
+            var listings = new List<ListingResult>();
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    await conn.OpenAsync();
+                    // Fetch listings
+                    //var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
+
+                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
+                    //    "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
+                    //    "ON l.ListingID = a.ListingID JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
+                    //    "WHERE (@ListingId IS NULL OR l.ListingID = @ListingId) AND c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName)" +
+                    //    "ORDER BY l.ListingID; ", conn);
+
+                    var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
+                       "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
+                       "ON l.ListingID = a.ListingID JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                       "WHERE (@ListingId IS NULL OR l.ListingID = @ListingId) AND c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName)" +
+                       "ORDER BY l.ListingID; ", conn);
+
+                    listingCmd.Parameters.AddWithValue("@ListingId", listingIds);
+                    listingCmd.Parameters.AddWithValue("@SubCategoryId", subCategoryid);
+                    listingCmd.Parameters.AddWithValue("@CityName", cityName);
+
+                    using (SqlDataReader reader = await listingCmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int listingId = reader.GetInt32(reader.GetOrdinal("ListingID"));
+                            string userGuid = reader.GetString(reader.GetOrdinal("OwnerGuid"));
+                            var listing = new ListingResult
+                            {
+                                ListingId = listingId,
+                                OwnerId = userGuid,
+                                Id = reader.GetGuid(reader.GetOrdinal("Id")).ToString(),
+                                CompanyName = reader.GetString(reader.GetOrdinal("CompanyName")),
+                                Url = reader.GetString(reader.GetOrdinal("ListingURL")),
+                                ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
+                                ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
+                                ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing"))
+                            };
+
+                            // Calculate BusinessYear
+                            DateTime yearOfEstablishment = reader.GetDateTime(reader.GetOrdinal("YearOfEstablishment"));
+                            listing.BusinessYear = DateTime.Now.Year - yearOfEstablishment.Year;
+
+                            //// Fetch logo image
+                            listing.LogoImage = await GetLogoImageByListingId(listingId);
+
+                            // Fetch business working hours
+                            listing.BusinessWorking = await IsBusinessOpen(listingId);
+
+                            // Fetch workingHours
+                            listing.Workingtime = await GetWorkingHoursByListingId(listingId);
+
+                            // Fetch NumberOfEmployees details
+                            listing.NumberOfEmployees = await GetNumberofEmployee(listingId);
+
+                            // Fetch Turnover details
+                            listing.Turnover = await GetTurnover(listingId);
+
+                            // Fetch category details
+                            listing.SubCategory = await GetSubcategory(listingId);
+
+                            // Fetch Descreption details
+                            listing.Description = await GetDescription(listingId);
+
+                            // Fetch YearOfEstablishment details
+                            listing.YearOfEstablishment = await GetYearOfEstablishment(listingId);
+
+                            // Fetch ratings
+                            var (RatingCount, RatingAverage) = await GetRating(listingId);
+                            listing.RatingCount = RatingCount;
+                            listing.RatingAverage = RatingAverage;
+
+                            // Fetch communication details
+                            var (Telephone, Whatsapp, Mobile, Email) = await Getcommunication(listingId);
+                            listing.Telephone = Telephone;
+                            listing.Whatsapp = Whatsapp;
+                            listing.Mobile = Mobile;
+                            listing.Email = Email;
+
+                            // Fetch address details
+                            var (City, Locality, Area, pincode, state, country, FullAddress) = await GetAddress(listingId);
+                            listing.City = City;
+                            listing.Locality = Locality;
+                            listing.Area = Area;
+                            listing.FullAddress = FullAddress;
+
+
+                            // Fetch Review Details
+                            listing.Reviews = await GetReviews(listingId);
+
+                            listings.Add(listing);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching listings");
+                throw;
+            }
+
+            return listings;
+        }
+
+
         private async Task<string> GetPincodeById(int pincodeId)
         {
             using (SqlConnection conn = new SqlConnection(_connectionStringMimshared))

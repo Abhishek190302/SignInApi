@@ -205,15 +205,38 @@ namespace SignInApi.Models
                 if (dt.Rows.Count > 0)
                 {
                     DataRow row = dt.Rows[0];
+
+                    List<string> imagePaths = new List<string>();
+                    foreach (DataRow rows in dt.Rows)
+                    {
+                        string imagePath = rows.Field<string>("ImagePath");
+                        if (!string.IsNullOrEmpty(imagePath))
+                        {
+                            imagePaths.Add(imagePath);
+                        }
+                    }
+
+
                     return new CertificateImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
-                        Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                        Imagepath = imagePaths,
                         Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
+
+                    //DataRow row = dt.Rows[0];
+                    //return new CertificateImage
+                    //{
+                    //    OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                    //    Listingid = row.Field<int?>("ListingID") ?? 0,
+                    //    Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                    //    Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                    //    craeteddate = row.Field<DateTime>("CreatedDate"),
+                    //    updateddate = row.Field<DateTime>("UpdateDate"),
+                    //};
                 }
                 return null;
             }
@@ -232,15 +255,38 @@ namespace SignInApi.Models
                 if (dt.Rows.Count > 0)
                 {
                     DataRow row = dt.Rows[0];
+
+                    List<string> imagePaths = new List<string>();
+                    foreach (DataRow rows in dt.Rows)
+                    {
+                        string imagePath = rows.Field<string>("ImagePath");
+                        if (!string.IsNullOrEmpty(imagePath))
+                        {
+                            imagePaths.Add(imagePath);
+                        }
+                    }
+
                     return new ClientImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
-                        Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                        Imagepath = imagePaths,
                         Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
+
+
+                    //DataRow row = dt.Rows[0];
+                    //return new ClientImage
+                    //{
+                    //    OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                    //    Listingid = row.Field<int?>("ListingID") ?? 0,
+                    //    Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                    //    Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                    //    craeteddate = row.Field<DateTime>("CreatedDate"),
+                    //    updateddate = row.Field<DateTime>("UpdateDate"),
+                    //};
                 }
                 return null;
             }
@@ -294,7 +340,7 @@ namespace SignInApi.Models
     {
         public string OwnerGuid { get; set; }
         public int Listingid { get; set; }
-        public string Imagepath { get; set; }
+        public List<string> Imagepath { get; set; }
         public string Imagetitle { get; set; }
         public DateTime craeteddate { get; set; }
         public DateTime updateddate { get; set; }
@@ -304,7 +350,7 @@ namespace SignInApi.Models
     {
         public string OwnerGuid { get; set; }
         public int Listingid { get; set; }
-        public string Imagepath { get; set; }
+        public List<string> Imagepath { get; set; }
         public string Imagetitle { get; set; }
         public DateTime craeteddate { get; set; }
         public DateTime updateddate { get; set; }

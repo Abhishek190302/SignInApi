@@ -591,16 +591,37 @@ namespace SignInApi.Models
                 adapter.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
+
                     DataRow row = dt.Rows[0];
+
+                    string concatenatedImagePaths = row.Field<string>("ImagePath") ?? string.Empty;
+                    List<string> imagePaths = concatenatedImagePaths
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
                     return new CertificateImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
-                        Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                        Imagepath = imagePaths,
                         Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
+
+
+                    //DataRow row = dt.Rows[0];
+                    //return new CertificateImage
+                    //{
+                    //    OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                    //    Listingid = row.Field<int?>("ListingID") ?? 0,
+                    //    Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                    //    Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                    //    craeteddate = row.Field<DateTime>("CreatedDate"),
+                    //    updateddate = row.Field<DateTime>("UpdateDate"),
+                    //};
                 }
                 return null;
             }
@@ -619,15 +640,33 @@ namespace SignInApi.Models
                 if (dt.Rows.Count > 0)
                 {
                     DataRow row = dt.Rows[0];
+
+                    string concatenatedImagePaths = row.Field<string>("ImagePath") ?? string.Empty;
+                    List<string> imagePaths = concatenatedImagePaths
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
                     return new ClientImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
-                        Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                        Imagepath = imagePaths,
                         Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
+
+                    //DataRow row = dt.Rows[0];
+                    //return new ClientImage
+                    //{
+                    //    OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                    //    Listingid = row.Field<int?>("ListingID") ?? 0,
+                    //    Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                    //    Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                    //    craeteddate = row.Field<DateTime>("CreatedDate"),
+                    //    updateddate = row.Field<DateTime>("UpdateDate"),
+                    //};
                 }
                 return null;
             }
