@@ -8,5 +8,6 @@
         public List<IFormFile> File { get; set; }
         public int CountryID { get; set; }
         public int StateID { get; set; }
+        public string MrndMs { get; set; }
     }
 }

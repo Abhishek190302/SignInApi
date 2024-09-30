@@ -124,11 +124,11 @@ namespace SignInApi.Controllers
                     {
                         command.Parameters.AddWithValue("@OwnerGuid", suggestion.OwnerGuid);
                         command.Parameters.AddWithValue("@Date", suggestion.Date);
-                        command.Parameters.AddWithValue("@Name", suggestion.Name);
+                        command.Parameters.AddWithValue("@Name", suggestion.Name ?? (object)DBNull.Value);
                         command.Parameters.AddWithValue("@Email", suggestion.Email);
                         command.Parameters.AddWithValue("@Mobile", suggestion.Mobile);
                         command.Parameters.AddWithValue("@Title", suggestion.Title);
-                        command.Parameters.AddWithValue("@SuggestionText", suggestion.SuggestionText);
+                        command.Parameters.AddWithValue("@SuggestionText", suggestion.SuggestionText ?? (object)DBNull.Value);
 
                         connection.Open();
                         await command.ExecuteNonQueryAsync();

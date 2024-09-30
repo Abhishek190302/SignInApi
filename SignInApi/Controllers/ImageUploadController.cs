@@ -263,6 +263,7 @@ namespace SignInApi.Controllers
                                 command.Parameters.AddWithValue("@ImageUrl", imageUrlsCommaSeparated);
                                 command.Parameters.AddWithValue("@CountryID", model.CountryID);
                                 command.Parameters.AddWithValue("@StateID", model.StateID);
+                                command.Parameters.AddWithValue("@MrndMs", model.MrndMs);
 
                                 connection.Open();
                                 int result = await command.ExecuteNonQueryAsync();
@@ -278,7 +279,9 @@ namespace SignInApi.Controllers
                                         Designation = model.Designation,
                                         ImageUrls = existingImages, // Return all images
                                         CountryID = model.CountryID,
-                                        StateID = model.StateID
+                                        StateID = model.StateID,
+                                        NamePrefix = model.MrndMs
+                                        
                                     };
 
                                     var response = new

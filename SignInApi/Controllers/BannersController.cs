@@ -45,6 +45,7 @@ namespace SignInApi.Controllers
                                     Priority = Convert.ToInt32(reader["Priority"]),
                                     Location = reader["Location"].ToString(),
                                     ImagePath = reader["imagepath"].ToString(),
+                                    BannerLink = reader["BannerLink"].ToString(),
                                     BannerType = reader["BannerType"].ToString(),
                                     GalleryBannerType = reader["GalleryBannersType"].ToString()
                                 };
@@ -79,8 +80,7 @@ namespace SignInApi.Controllers
                 catch(Exception ex)
                 {
                     throw;
-                }
-                
+                } 
             }
 
             var response = new
@@ -91,6 +91,70 @@ namespace SignInApi.Controllers
                     ServicesBanners = servicesBanners,
                     ContractorBanners = contractorBanners,
                     DealerBanners = dealearBanners
+                },
+                CategoryBanners = new
+                {
+                    HomecategoryBanners = new[]
+                    {
+                        new
+                        {
+                            priority = 1,
+                            location = "Mumbai",
+                            imagePath = "/Banners/GalleryBanners/6894b8b3-1507-4056-9360-33f8d564fe83/Medical Clinic_1.png",
+                            bannerLink = "https://www.facebook.com/myinteriormart",
+                            bannerType = "Category Home Image",
+                            galleryBannerType = ""
+                        },
+                        new
+                        {
+                            priority = 2,
+                            location = "Delhi",
+                            imagePath = "/Banners/GalleryBanners/6894b8b3-1507-4056-9360-33f8d564fe83/Medical Clinic.png",
+                            bannerLink = "https://www.twitter.com/myinteriormart",
+                            bannerType = "Category Home Image",
+                            galleryBannerType = ""
+                        }
+                    },
+
+                    AdvertiseCategoryBanner = new[]
+                    {
+                        new
+                        {
+                            priority = 3,
+                            location = "Mumbai",
+                            imagePath = "/Banners/GalleryBanners/6894b8b3-1507-4056-9360-33f8d564fe83/Services_1.png",
+                            bannerLink = "https://www.facebook.com/myinteriormart",
+                            bannerType = "Category Advertise Image",
+                            galleryBannerType = ""
+                        },
+                        new
+                        {
+                            priority = 4,
+                            location = "Delhi",
+                            imagePath = "/Banners/GalleryBanners/6894b8b3-1507-4056-9360-33f8d564fe83/Contractor.png",
+                            bannerLink = "https://www.twitter.com/myinteriormart",
+                            bannerType = "Category Advertise Image",
+                            galleryBannerType = ""
+                        },
+                        new
+                        {
+                            priority = 5,
+                            location = "Kolhapur",
+                            imagePath = "/Banners/GalleryBanners/6894b8b3-1507-4056-9360-33f8d564fe83/Contractor_1.png",
+                            bannerLink = "https://www.twitter.com/myinteriormart",
+                            bannerType = "Category Advertise Image",
+                            galleryBannerType = ""
+                        },
+                        new
+                        {
+                            priority = 6,
+                            location = "Kolhapur",
+                            imagePath = "/Banners/GalleryBanners/6894b8b3-1507-4056-9360-33f8d564fe83/Dealear_1.png",
+                            bannerLink = "https://www.twitter.com/myinteriormart",
+                            bannerType = "Category Advertise Image",
+                            galleryBannerType = ""
+                        }
+                    }
                 }
             };
 

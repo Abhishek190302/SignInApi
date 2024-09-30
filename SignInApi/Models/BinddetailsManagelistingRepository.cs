@@ -479,7 +479,7 @@ namespace SignInApi.Models
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 SqlCommand cmd = new SqlCommand(
-                    "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID " +
+                    "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID, MrndMs " +
                     "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
 
@@ -511,6 +511,7 @@ namespace SignInApi.Models
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
                         CountryId = firstRow.Field<int?>("CountryID") ?? 0,
                         StateId = firstRow.Field<int?>("StateID") ?? 0,
+                        Prefix = firstRow.Field<string>("MrndMs") ?? string.Empty,
                     };
                 }
                 return null;

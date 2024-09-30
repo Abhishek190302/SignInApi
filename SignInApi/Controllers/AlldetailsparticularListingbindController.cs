@@ -43,6 +43,24 @@ namespace SignInApi.Controllers
         }
 
         [HttpPost]
+        [Route("GetCertificateImage")]
+        public async Task<IActionResult> GetCertificateImage(CertificateimageVM certificateimageVM)
+        {
+            var CertificateImage = await GetCertificateImageByListingIdAsync(certificateimageVM.companyID);
+            return Ok(CertificateImage);
+        }
+
+        [HttpPost]
+        [Route("GetClientImage")]
+        public async Task<IActionResult> GetClientImage(ClientimageVM clientimageVM)
+        {
+            var ClientImage = await GetClientImageByListingIdAsync(clientimageVM.companyID);
+            return Ok(ClientImage);
+        }
+
+
+
+        [HttpPost]
         [Route("GetServicescategory")]
         public async Task<IActionResult> GetServicescategory(ServicescategoryVM servicescategoryVM)
         {
@@ -79,12 +97,50 @@ namespace SignInApi.Controllers
         }
 
 
-        private async Task<OwnerImage> GetOwnerImageByListingIdAsync(int companyID)
+        //private async Task<OwnerImage> GetOwnerImageByListingIdAsync(int companyID)
+        //{
+        //    using (SqlConnection conn = new SqlConnection(_connectionString))
+        //    {
+        //        SqlCommand cmd = new SqlCommand("SELECT ListingID, ImagePath, OwnerName, LastName FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
+        //        cmd.Parameters.AddWithValue("@ListingID", companyID);
+        //        await conn.OpenAsync();
+        //        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+        //        DataTable dt = new DataTable();
+        //        adapter.Fill(dt);
+
+        //        if (dt.Rows.Count > 0)
+        //        {
+        //            DataRow firstRow = dt.Rows[0];
+
+        //            // Assuming the ImagePath column contains a single concatenated string
+        //            string concatenatedImagePaths = firstRow.Field<string>("ImagePath") ?? string.Empty;
+        //            List<string> imagePaths = concatenatedImagePaths
+        //                                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+        //                                        .Select(p => p.Trim())
+        //                                        .ToList();
+
+        //            return new OwnerImage
+        //            {
+        //                Listingid = firstRow.Field<int?>("ListingID") ?? 0,
+        //                Imagepath = imagePaths,
+        //                OwnerName = firstRow.Field<string>("OwnerName") ?? string.Empty,
+        //                LastName = firstRow.Field<string>("LastName") ?? string.Empty,
+        //            };
+        //        }
+        //        return null;
+        //    }
+        //}
+
+
+        private async Task<OwnerImage> GetOwnerImageByListingIdAsync(int listingId)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                SqlCommand cmd = new SqlCommand("SELECT ListingID, ImagePath, OwnerName, LastName FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
-                cmd.Parameters.AddWithValue("@ListingID", companyID);
+                SqlCommand cmd = new SqlCommand(
+                    "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID, MrndMs " +
+                    "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
+                cmd.Parameters.AddWithValue("@ListingID", listingId);
+
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
@@ -103,10 +159,17 @@ namespace SignInApi.Controllers
 
                     return new OwnerImage
                     {
+                        OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = firstRow.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
+                        Designation = firstRow.Field<string>("Designation") ?? string.Empty,
                         OwnerName = firstRow.Field<string>("OwnerName") ?? string.Empty,
                         LastName = firstRow.Field<string>("LastName") ?? string.Empty,
+                        craeteddate = firstRow.Field<DateTime>("CreatedDate"),
+                        updateddate = firstRow.Field<DateTime>("UpdateDate"),
+                        CountryId = firstRow.Field<int?>("CountryID") ?? 0,
+                        StateId = firstRow.Field<int?>("StateID") ?? 0,
+                        Prefix = firstRow.Field<string>("MrndMs") ?? string.Empty,
                     };
                 }
                 return null;
@@ -166,6 +229,100 @@ namespace SignInApi.Controllers
                         Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
                         
                     };
+                }
+                return null;
+            }
+        }
+
+        private async Task<CertificateImage> GetCertificateImageByListingIdAsync(int listingId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[CertificationDetail] WHERE ListingID = @ListingID", conn);
+                cmd.Parameters.AddWithValue("@ListingID", listingId);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+
+                    DataRow row = dt.Rows[0];
+
+                    string concatenatedImagePaths = row.Field<string>("ImagePath") ?? string.Empty;
+                    List<string> imagePaths = concatenatedImagePaths
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
+                    return new CertificateImage
+                    {
+                        OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                        Listingid = row.Field<int?>("ListingID") ?? 0,
+                        Imagepath = imagePaths,
+                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        craeteddate = row.Field<DateTime>("CreatedDate"),
+                        updateddate = row.Field<DateTime>("UpdateDate"),
+                    };
+
+
+                    //DataRow row = dt.Rows[0];
+                    //return new CertificateImage
+                    //{
+                    //    OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                    //    Listingid = row.Field<int?>("ListingID") ?? 0,
+                    //    Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                    //    Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                    //    craeteddate = row.Field<DateTime>("CreatedDate"),
+                    //    updateddate = row.Field<DateTime>("UpdateDate"),
+                    //};
+                }
+                return null;
+            }
+        }
+
+
+        private async Task<ClientImage> GetClientImageByListingIdAsync(int listingId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[ClientDetail] WHERE ListingID = @ListingID", conn);
+                cmd.Parameters.AddWithValue("@ListingID", listingId);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+
+                    string concatenatedImagePaths = row.Field<string>("ImagePath") ?? string.Empty;
+                    List<string> imagePaths = concatenatedImagePaths
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+                    return new ClientImage
+                    {
+                        OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                        Listingid = row.Field<int?>("ListingID") ?? 0,
+                        Imagepath = imagePaths,
+                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        craeteddate = row.Field<DateTime>("CreatedDate"),
+                        updateddate = row.Field<DateTime>("UpdateDate"),
+                    };
+
+                    //DataRow row = dt.Rows[0];
+                    //return new ClientImage
+                    //{
+                    //    OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                    //    Listingid = row.Field<int?>("ListingID") ?? 0,
+                    //    Imagepath = row.Field<string>("ImagePath") ?? string.Empty,
+                    //    Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                    //    craeteddate = row.Field<DateTime>("CreatedDate"),
+                    //    updateddate = row.Field<DateTime>("UpdateDate"),
+                    //};
                 }
                 return null;
             }

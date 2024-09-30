@@ -314,6 +314,7 @@ namespace SignInApi.Models
         public DateTime updateddate { get; set; }
         public int CountryId { get; set; }
         public int StateId { get; set; }
+        public string Prefix { get; set; }
     }
 
     public class GallerysImage

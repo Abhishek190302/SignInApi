@@ -140,11 +140,11 @@ namespace SignInApi.Controllers
                     {
                         command.Parameters.AddWithValue("@OwnerGuid", complaint.OwnerGuid);
                         command.Parameters.AddWithValue("@Date", complaint.Date);
-                        command.Parameters.AddWithValue("@Name", complaint.Name);
+                        command.Parameters.AddWithValue("@Name", complaint.Name ?? (object)DBNull.Value);
                         command.Parameters.AddWithValue("@Email", complaint.Email);
                         command.Parameters.AddWithValue("@Mobile", complaint.Mobile);
                         command.Parameters.AddWithValue("@Title", complaint.Title);
-                        command.Parameters.AddWithValue("@Description", complaint.Description);
+                        command.Parameters.AddWithValue("@Description", complaint.Description ?? (object)DBNull.Value);
                         command.Parameters.AddWithValue("@ImagePath", complaint.ImagePath);
 
                         connection.Open();
