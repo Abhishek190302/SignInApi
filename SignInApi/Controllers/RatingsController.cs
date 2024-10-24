@@ -280,7 +280,6 @@ namespace SignInApi.Controllers
             
         }
 
-
         private async Task<UserProfileRequest> GetProfileByOwnerGuidAsync(string ownerGuid)
         {
             using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("MimUser")))

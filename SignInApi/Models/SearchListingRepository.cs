@@ -51,6 +51,42 @@ namespace SignInApi.Models
             return listings;
         }
 
+
+        public async Task<IList<ListingSearch>> GetUnapprovedListings()
+        {
+            var listings = new List<ListingSearch>();
+
+            using (SqlConnection conn = new SqlConnection(_connectionListing))
+            {
+                await conn.OpenAsync();
+                string query = @"
+                SELECT l.ListingID, l.CompanyName, l.ListingURL,l.BusinessCategory, a.AssemblyID 
+                FROM [listing].[Listing] l
+                JOIN [listing].[Address] a ON l.ListingID = a.ListingID
+                WHERE l.Status = 0";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                var dt = new DataTable();
+                da.Fill(dt);
+                foreach (DataRow row in dt.Rows)
+                {
+                    listings.Add(new ListingSearch
+                    {
+                        ListingId = row["ListingID"].ToString(),
+                        CompanyName = row["CompanyName"].ToString(),
+                        ListingURL = row["ListingURL"].ToString(),
+                        Keyword = row["BusinessCategory"].ToString(),
+                        Address = new AddressSearch { AssemblyID = row["AssemblyID"].ToString() }
+                    });
+                }
+            }
+
+            return listings;
+        }
+
+
+
         public async Task<bool> IsListingInCategory(int listingId, string searchText)
         {
             var subCategories = await GetSubcategory(listingId);

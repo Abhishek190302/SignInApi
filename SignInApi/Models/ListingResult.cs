@@ -13,11 +13,15 @@
         public string Turnover { get; set; }
         public string YearOfEstablishment { get; set; }
         public string NumberOfEmployees { get; set; }
+        public string GSTNumber { get; set; }
+        public string Languges { get; set; }
+        public string TollFree { get; set; }
         public string FullAddress { get; set; }
         public string City { get; set; }
         public string Locality { get; set; }
         public string Area { get; set; }
         public string Mobile { get; set; }
+        public string RegisterMobile { get; set; }
         public string Whatsapp { get; set; }
         public string Telephone { get; set; }
         public double RatingAverage { get; set; }
@@ -35,6 +39,7 @@
         }
         public string Url { get; set; }
         public string Email { get; set; }
+        public string Website { get; set; }
         public bool SelfCreated { get; set; }
         public bool ClaimedListing { get; set; }
         public WorkingTime Workingtime { get; set; }

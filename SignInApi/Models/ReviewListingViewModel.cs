@@ -8,12 +8,14 @@
         public string CompanyName { get; set; }
         public string CompanyLogo { get; set; }
         public string UserName { get; set; }
+        public string Gender { get; set; }
         public string UserImage { get; set; }
         public string NameFirstLetter { get; set; }
         public string ListingUrl { get; set; }
         public string BusinessCategory { get; set; }
         public string SecondCat { get; set; }
         public string Date { get; set; }
+        public string TimeAgo { get; set; }
         public int Ratings { get; set; }
         public decimal Rating
         {

@@ -76,7 +76,8 @@ namespace SignInApi.Models
                                 ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
                                 ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
-                                ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing"))
+                                ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
+                                GSTNumber = reader.GetString(reader.GetOrdinal("GSTNumber")),
                             };
 
                             // Calculate BusinessYear
@@ -113,11 +114,15 @@ namespace SignInApi.Models
                             listing.RatingAverage = RatingAverage;
 
                             // Fetch communication details
-                            var (Telephone, Whatsapp, Mobile, Email) = await Getcommunication(listingId);
+                            var (Telephone, Whatsapp, Mobile, Email, Website, Languges, Tollfree, RegisterNumber) = await Getcommunication(listingId);
                             listing.Telephone = Telephone;
                             listing.Whatsapp = Whatsapp;
                             listing.Mobile = Mobile;
                             listing.Email = Email;
+                            listing.Website = Website;
+                            listing.Languges = Languges;
+                            listing.TollFree = Tollfree;
+                            listing.RegisterMobile = RegisterNumber;
 
                             // Fetch address details
                             var (City, Locality, Area, pincode, state, country, FullAddress) = await GetAddress(listingId);
@@ -225,11 +230,15 @@ namespace SignInApi.Models
                             listing.RatingAverage = RatingAverage;
 
                             // Fetch communication details
-                            var (Telephone, Whatsapp, Mobile, Email) = await Getcommunication(listingId);
+                            var (Telephone, Whatsapp, Mobile, Email, Website, Languges, TollFree, RegisterNumber) = await Getcommunication(listingId);
                             listing.Telephone = Telephone;
                             listing.Whatsapp = Whatsapp;
                             listing.Mobile = Mobile;
                             listing.Email = Email;
+                            listing.Website = Website;
+                            listing.Languges = Languges;
+                            listing.TollFree = TollFree;
+                            listing.RegisterMobile = RegisterNumber;
 
                             // Fetch address details
                             var (City, Locality, Area, pincode, state, country, FullAddress) = await GetAddress(listingId);
@@ -470,12 +479,16 @@ namespace SignInApi.Models
             } 
         }
 
-        private async Task<(string Telephone, string Whatsapp, string Mobile, string Email)> Getcommunication(int listingId)
+        private async Task<(string Telephone, string Whatsapp, string Mobile, string Email, string Website, string Languages, string Tollfree, string RegisterNumber)> Getcommunication(int listingId)
         {
             string telephone = string.Empty;
             string whatsapp = string.Empty;
             string mobile = string.Empty;
             string email = string.Empty;
+            string website = string.Empty;
+            string languages = string.Empty;
+            string tollfree = string.Empty;
+            string registernumber = string.Empty;
 
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
@@ -492,10 +505,14 @@ namespace SignInApi.Models
                     whatsapp = GetColumnValueOrNull(row, "Whatsapp");
                     mobile = GetColumnValueOrNull(row, "Mobile");
                     email = GetColumnValueOrNull(row, "Email");
+                    website = GetColumnValueOrNull(row, "Website");
+                    languages = GetColumnValueOrNull(row, "Language");
+                    tollfree = GetColumnValueOrNull(row, "TollFree");
+                    registernumber = GetColumnValueOrNull(row, "TelephoneSecond");
                 }
             }
 
-            return (telephone, whatsapp, mobile, email);
+            return (telephone, whatsapp, mobile, email, website, languages, tollfree, registernumber);
         }
 
         private string GetColumnValueOrNull(DataRow row, string columnName)
@@ -598,7 +615,7 @@ namespace SignInApi.Models
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
-                var cmd = new SqlCommand("SELECT ImagePath FROM [dbo].[LogoImage] WHERE ListingID = @ListingID", conn);
+                var cmd = new SqlCommand("SELECT ImagePath FROM [dbo].[LogoImage] WHERE ListingID = @ListingID AND Status = '1';", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
                 using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
                 {

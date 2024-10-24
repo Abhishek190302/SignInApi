@@ -22,6 +22,17 @@
         public string Keyword { get; set; }
     }
 
+    public class ListingFreeSearch
+    {
+        public string ListingId { get; set; }
+        public string CompanyName { get; set; }
+        public string ListingURL { get; set; }
+        public AddressSearch Address { get; set; }
+        public string Keyword { get; set; }
+        public string OwnerName { get; set; }
+        public AddressSearch Addreses { get; set; }
+    }
+
     public class AddressSearch
     {
         public string AssemblyID { get; set; }

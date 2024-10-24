@@ -183,7 +183,10 @@ namespace SignInApi.Models
             return await GetEnquiryListingActivitiesAsync("SELECT * FROM [dbo].[Enquiry] WHERE ListingID = @ListingId ORDER BY CreatedDate DESC", listingId);
         }
 
-
+        public async Task<IEnumerable<ListingActivity>> GetReviewByListingIdAsync(int listingId)
+        {
+            return await GetReviewListingActivitiesAsync("SELECT * FROM [listing].[Rating] WHERE ListingID = @ListingId ORDER BY Date DESC", listingId);
+        }
 
         public async Task<IEnumerable<ListingActivity>> GetListingActivitiesAsync(string query, int listingId)
         {
@@ -227,6 +230,30 @@ namespace SignInApi.Models
                     {
                         UserGuid = row["OwnerGuid"].ToString(),
                         VisitDate = Convert.ToDateTime(row["CreatedDate"])
+                    });
+                }
+            }
+            return activities;
+        }
+
+        public async Task<IEnumerable<ListingActivity>> GetReviewListingActivitiesAsync(string query, int listingId)
+        {
+            var activities = new List<ListingActivity>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@ListingID", listingId);
+                var da = new SqlDataAdapter(command);
+                var dt = new DataTable();
+                await connection.OpenAsync();
+                da.Fill(dt);
+                foreach (DataRow row in dt.Rows)
+                {
+                    activities.Add(new ListingActivity
+                    {
+                        UserGuid = row["OwnerGuid"].ToString(),
+                        VisitDate = Convert.ToDateTime(row["Date"])
                     });
                 }
             }
@@ -287,6 +314,11 @@ namespace SignInApi.Models
             {
                 activityText = "Enquiry";
                 listingActivities = await GetEnquiryByListingIdAsync(listing.Listingid);
+            }
+            else if (activityType == Constantss.Review)
+            {
+                activityText = "Review";
+                listingActivities = await GetReviewByListingIdAsync(listing.Listingid);
             }
 
             if (listingActivities == null) return null;

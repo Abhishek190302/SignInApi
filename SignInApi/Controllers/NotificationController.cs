@@ -46,6 +46,7 @@ namespace SignInApi.Controllers
                             var likes = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Like);
                             var subscribes = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Subscribe);
                             var enquiries = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Enquiry);
+                            var reviews = await _dashboardRepository.GetListingActivityAsync(currentUserGuid, Constantss.Review);
 
 
                             // Combine all activities into a single list
@@ -54,6 +55,7 @@ namespace SignInApi.Controllers
                             if (likes != null) notifications.AddRange(likes);
                             if (subscribes != null) notifications.AddRange(subscribes);
                             if (enquiries != null) notifications.AddRange(enquiries);
+                            if (reviews != null) notifications.AddRange(reviews);
 
                             // Return combined notifications
                             var response = new

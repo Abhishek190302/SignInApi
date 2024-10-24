@@ -499,13 +499,28 @@ namespace SignInApi.Models
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedFirstname = firstRow.Field<string>("OwnerName") ?? string.Empty;
+                    List<string> Firstname = concatenatedFirstname
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+                    string concatenatedDesignation = firstRow.Field<string>("Designation") ?? string.Empty;
+                    List<string> Designation = concatenatedDesignation
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
+
+
                     return new OwnerImage
                     {
                         OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = firstRow.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Designation = firstRow.Field<string>("Designation") ?? string.Empty,
-                        OwnerName = firstRow.Field<string>("OwnerName") ?? string.Empty,
+                        Designation = Designation,
+                        OwnerName = Firstname,
                         LastName = firstRow.Field<string>("LastName") ?? string.Empty,
                         craeteddate = firstRow.Field<DateTime>("CreatedDate"),
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
@@ -538,13 +553,19 @@ namespace SignInApi.Models
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedImageTitle = row.Field<string>("ImageTitle") ?? string.Empty;
+                    List<string> imageTitle = concatenatedImageTitle
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
 
                     return new GallerysImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitle,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -601,13 +622,19 @@ namespace SignInApi.Models
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedImageTitle = row.Field<string>("ImageTitle") ?? string.Empty;
+                    List<string> imageTitle = concatenatedImageTitle
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
 
                     return new CertificateImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitle,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -648,12 +675,19 @@ namespace SignInApi.Models
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedImageTitle = row.Field<string>("ImageTitle") ?? string.Empty;
+                    List<string> imageTitle = concatenatedImageTitle
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
                     return new ClientImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitle,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };

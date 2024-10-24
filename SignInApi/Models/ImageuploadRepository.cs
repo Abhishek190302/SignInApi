@@ -66,6 +66,8 @@ namespace SignInApi.Models
 
                     // Create a list to hold all image paths
                     List<string> imagePaths = new List<string>();
+                    List<string> Firstnames = new List<string>();
+                    List<string> Designations = new List<string>();
                     foreach (DataRow row in dt.Rows)
                     {
                         string imagePath = row.Field<string>("ImagePath");
@@ -74,14 +76,30 @@ namespace SignInApi.Models
                             imagePaths.Add(imagePath);
                         }
                     }
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        string firstname = row.Field<string>("OwnerName");
+                        if (!string.IsNullOrEmpty(firstname))
+                        {
+                            Firstnames.Add(firstname);
+                        }
+                    }
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        string designation = row.Field<string>("Designation");
+                        if (!string.IsNullOrEmpty(designation))
+                        {
+                            Designations.Add(designation);
+                        }
+                    }
 
                     return new OwnerImage
                     {
                         OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = firstRow.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Designation = firstRow.Field<string>("Designation") ?? string.Empty,
-                        OwnerName = firstRow.Field<string>("OwnerName") ?? string.Empty,
+                        Designation = Firstnames,
+                        OwnerName = Designations,
                         LastName = firstRow.Field<string>("LastName") ?? string.Empty,
                         craeteddate = firstRow.Field<DateTime>("CreatedDate"),
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
@@ -141,12 +159,21 @@ namespace SignInApi.Models
                     DataRow row = dt.Rows[0];
 
                     List<string> imagePaths = new List<string>();
+                    List<string> imageTitles = new List<string>();
                     foreach (DataRow rows in dt.Rows)
                     {
                         string imagePath = rows.Field<string>("ImagePath");
                         if (!string.IsNullOrEmpty(imagePath))
                         {
                             imagePaths.Add(imagePath);
+                        }
+                    }
+                    foreach (DataRow rows in dt.Rows)
+                    {
+                        string imageTitle = rows.Field<string>("ImageTitle");
+                        if (!string.IsNullOrEmpty(imageTitle))
+                        {
+                            imageTitles.Add(imageTitle);
                         }
                     }
 
@@ -156,7 +183,7 @@ namespace SignInApi.Models
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitles,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -207,12 +234,21 @@ namespace SignInApi.Models
                     DataRow row = dt.Rows[0];
 
                     List<string> imagePaths = new List<string>();
+                    List<string> imageTitles = new List<string>();
                     foreach (DataRow rows in dt.Rows)
                     {
                         string imagePath = rows.Field<string>("ImagePath");
                         if (!string.IsNullOrEmpty(imagePath))
                         {
                             imagePaths.Add(imagePath);
+                        }
+                    }
+                    foreach (DataRow rows in dt.Rows)
+                    {
+                        string imageTitle = rows.Field<string>("ImageTitle");
+                        if (!string.IsNullOrEmpty(imageTitle))
+                        {
+                            imageTitles.Add(imageTitle);
                         }
                     }
 
@@ -222,7 +258,7 @@ namespace SignInApi.Models
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitles,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -257,6 +293,7 @@ namespace SignInApi.Models
                     DataRow row = dt.Rows[0];
 
                     List<string> imagePaths = new List<string>();
+                    List<string> imageTitles = new List<string>();
                     foreach (DataRow rows in dt.Rows)
                     {
                         string imagePath = rows.Field<string>("ImagePath");
@@ -265,13 +302,21 @@ namespace SignInApi.Models
                             imagePaths.Add(imagePath);
                         }
                     }
+                    foreach (DataRow rows in dt.Rows)
+                    {
+                        string imageTitle = rows.Field<string>("ImageTitle");
+                        if (!string.IsNullOrEmpty(imageTitle))
+                        {
+                            imageTitles.Add(imageTitle);
+                        }
+                    }
 
                     return new ClientImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitles,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -307,8 +352,8 @@ namespace SignInApi.Models
         public string OwnerGuid { get; set; }
         public int Listingid { get; set; }
         public List<string> Imagepath { get; set; }
-        public string Designation { get; set; }
-        public string OwnerName { get; set; }
+        public List<string> Designation { get; set; }
+        public List<string> OwnerName { get; set; }
         public string LastName { get; set; }
         public DateTime craeteddate { get;set; }
         public DateTime updateddate { get; set; }
@@ -322,7 +367,7 @@ namespace SignInApi.Models
         public string OwnerGuid { get; set; }
         public int Listingid { get; set; }
         public List<string> Imagepath { get; set; }
-        public string Imagetitle { get; set; }
+        public List<string> Imagetitle { get; set; }
         public DateTime craeteddate { get; set; }
         public DateTime updateddate { get; set; }
     }
@@ -342,7 +387,7 @@ namespace SignInApi.Models
         public string OwnerGuid { get; set; }
         public int Listingid { get; set; }
         public List<string> Imagepath { get; set; }
-        public string Imagetitle { get; set; }
+        public List<string> Imagetitle { get; set; }
         public DateTime craeteddate { get; set; }
         public DateTime updateddate { get; set; }
     }
@@ -352,7 +397,7 @@ namespace SignInApi.Models
         public string OwnerGuid { get; set; }
         public int Listingid { get; set; }
         public List<string> Imagepath { get; set; }
-        public string Imagetitle { get; set; }
+        public List<string> Imagetitle { get; set; }
         public DateTime craeteddate { get; set; }
         public DateTime updateddate { get; set; }
     }

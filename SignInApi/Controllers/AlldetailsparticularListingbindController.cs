@@ -58,8 +58,6 @@ namespace SignInApi.Controllers
             return Ok(ClientImage);
         }
 
-
-
         [HttpPost]
         [Route("GetServicescategory")]
         public async Task<IActionResult> GetServicescategory(ServicescategoryVM servicescategoryVM)
@@ -94,6 +92,14 @@ namespace SignInApi.Controllers
         {
             var Keyword = await GetKeywordsByListingIdAsync(keywordVM.companyID);
             return Ok(Keyword);
+        }
+
+        [HttpPost]
+        [Route("GetSocialLinkDetails")]
+        public async Task<IActionResult> GetSocialLinkDetails(SocialLinkVM socialLinkVM)
+        {
+            var sociallink = await GetSocialNetworkByListingId(socialLinkVM.companyID);
+            return Ok(sociallink);
         }
 
 
@@ -138,7 +144,7 @@ namespace SignInApi.Controllers
             {
                 SqlCommand cmd = new SqlCommand(
                     "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID, MrndMs " +
-                    "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
+                    "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID AND Status = '1';", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
 
                 await conn.OpenAsync();
@@ -157,13 +163,30 @@ namespace SignInApi.Controllers
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedFirstname = firstRow.Field<string>("OwnerName") ?? string.Empty;
+                    List<string> Firstname = concatenatedFirstname
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+                    string concatenatedDesignation = firstRow.Field<string>("Designation") ?? string.Empty;
+                    List<string> Designation = concatenatedDesignation
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
+
+
+
+
                     return new OwnerImage
                     {
                         OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = firstRow.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Designation = firstRow.Field<string>("Designation") ?? string.Empty,
-                        OwnerName = firstRow.Field<string>("OwnerName") ?? string.Empty,
+                        Designation = Designation,
+                        OwnerName = Firstname,
                         LastName = firstRow.Field<string>("LastName") ?? string.Empty,
                         craeteddate = firstRow.Field<DateTime>("CreatedDate"),
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
@@ -180,7 +203,7 @@ namespace SignInApi.Controllers
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                SqlCommand cmd = new SqlCommand("SELECT ListingID,ImagePath FROM [dbo].[BannerDetail] WHERE ListingID = @ListingID", conn);
+                SqlCommand cmd = new SqlCommand("SELECT ListingID,ImagePath FROM [dbo].[BannerDetail] WHERE ListingID = @ListingID AND Status = '1';", conn);
                 cmd.Parameters.AddWithValue("@ListingID", companyID);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
@@ -204,7 +227,7 @@ namespace SignInApi.Controllers
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                SqlCommand cmd = new SqlCommand("SELECT ListingID,ImagePath,ImageTitle FROM [dbo].[GalleryImage] WHERE ListingID = @ListingID", conn);
+                SqlCommand cmd = new SqlCommand("SELECT ListingID,ImagePath,ImageTitle FROM [dbo].[GalleryImage] WHERE ListingID = @ListingID AND Status = '1';", conn);
                 cmd.Parameters.AddWithValue("@ListingID", companyID);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
@@ -220,13 +243,19 @@ namespace SignInApi.Controllers
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedImageTitle = row.Field<string>("ImageTitle") ?? string.Empty;
+                    List<string> imageTitle = concatenatedImageTitle
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
 
                     return new GallerysImage
                     {
                         
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitle,
                         
                     };
                 }
@@ -238,7 +267,7 @@ namespace SignInApi.Controllers
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[CertificationDetail] WHERE ListingID = @ListingID", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[CertificationDetail] WHERE ListingID = @ListingID AND Status = '1';", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
@@ -255,13 +284,19 @@ namespace SignInApi.Controllers
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedImageTitle = row.Field<string>("ImageTitle") ?? string.Empty;
+                    List<string> imageTitle = concatenatedImageTitle
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
 
                     return new CertificateImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitle,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -287,7 +322,7 @@ namespace SignInApi.Controllers
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[ClientDetail] WHERE ListingID = @ListingID", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[ClientDetail] WHERE ListingID = @ListingID AND Status = '1';", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
                 await conn.OpenAsync();
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
@@ -303,12 +338,19 @@ namespace SignInApi.Controllers
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedImageTitle = row.Field<string>("ImageTitle") ?? string.Empty;
+                    List<string> imageTitle = concatenatedImageTitle
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+
                     return new ClientImage
                     {
                         OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = row.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Imagetitle = row.Field<string>("ImageTitle") ?? string.Empty,
+                        Imagetitle = imageTitle,
                         craeteddate = row.Field<DateTime>("CreatedDate"),
                         updateddate = row.Field<DateTime>("UpdateDate"),
                     };
@@ -479,6 +521,41 @@ namespace SignInApi.Controllers
             }
 
             return keywords;
+        }
+
+        private async Task<SocialNetwork> GetSocialNetworkByListingId(int listingId)
+        {
+            SocialNetwork socialNetwork = null;
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[SocialNetwork] WHERE ListingID = @ListingID", conn);
+                cmd.Parameters.AddWithValue("@ListingID", listingId);
+                await conn.OpenAsync();
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                {
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    if (dt.Rows.Count > 0)
+                    {
+                        DataRow row = dt.Rows[0];
+                        socialNetwork = new SocialNetwork
+                        {
+                            ListingID = (int)row["ListingID"],
+                            OwnerGuid = row["OwnerGuid"].ToString(),
+                            IPAddress = row["IPAddress"].ToString(),
+                            Facebook = row["Facebook"].ToString(),
+                            WhatsappGroupLink = row["WhatsappGroupLink"].ToString(),
+                            Linkedin = row["Linkedin"].ToString(),
+                            Twitter = row["Twitter"].ToString(),
+                            Youtube = row["Youtube"].ToString(),
+                            Instagram = row["Instagram"].ToString(),
+                            Pinterest = row["Pinterest"].ToString()
+                        };
+                    }
+                }
+            }
+
+            return socialNetwork;
         }
     }
 }
