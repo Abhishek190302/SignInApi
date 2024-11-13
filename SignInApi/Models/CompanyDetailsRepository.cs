@@ -10,10 +10,12 @@ namespace SignInApi.Models
     public class CompanyDetailsRepository
     {
         private readonly string _connectionString;
+        private readonly string _connectionCategoryString;
 
         public CompanyDetailsRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("MimListing");
+            _connectionCategoryString = configuration.GetConnectionString("MimCategories");
         }
 
         public async Task<Listing> GetListingByOwnerIdAsync(dynamic ownerId)
@@ -215,6 +217,21 @@ namespace SignInApi.Models
                     keywords.Add(row["SeoKeyword"].ToString());
                 } 
             }
+
+            using (SqlConnection connection = new SqlConnection(_connectionCategoryString))
+            {
+                connection.Open();
+
+                SqlCommand command = new SqlCommand("SELECT SearchKeywordName FROM [cat].[SecondCategory]", connection);
+                SqlDataAdapter adapter = new SqlDataAdapter(command);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                foreach (DataRow row in dt.Rows)
+                {
+                    keywords.Add(row["SearchKeywordName"].ToString());
+                }
+            }
+
             return keywords;
         }
     }

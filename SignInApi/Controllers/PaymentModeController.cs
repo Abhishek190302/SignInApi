@@ -93,7 +93,8 @@ namespace SignInApi.Controllers
                                 string message = $"Hello {companyName} Congratulations! Your Business Listing has been Under review. After review your listing has been Live within 48 hour's My Interior Mart Team";
                                 using (HttpClient httpClient = new HttpClient())
                                 {
-                                    string smsApiUrl = $"http://vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={communication.Mobile}&message[]={message}&te_id=1207172526119813069";
+                                    string smsApiUrl = $"http://text.bluemedia.in/http-tokenkeyapi.php?authentic-key=32316d79696e746572696f726d6172743737391729246892&senderid=MYINTR&route=2&number={communication.Mobile}&message={message}&templateid=1207172949318660895";
+                                    //string smsApiUrl = $"http://vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={communication.Mobile}&message[]={message}&te_id=1207172526119813069";
                                     HttpResponseMessage response = await httpClient.GetAsync(smsApiUrl);
                                     if (response.IsSuccessStatusCode)
                                     {
@@ -168,16 +169,16 @@ namespace SignInApi.Controllers
                         .footer img {{ width: 150px; }}
                     </style>
                 </head>
-            <body>
-            <div class='container'>
-                <h1>Hello {listing.ListingURL}, Listing Created Successfully</h1>
-                <p>Congratulation! Your Business Listing has Under review. After</p>
-                <p>review your listing has been live within 48 hour's - My Interior Mart Team.</p>
-                <p>For any help, connect over WhatsApp: <strong>+91 9876543210</strong></p>
-                <p>Thank you!<br>Have a wonderful day!!!</p>
-            </div>
-        </body>
-        </html>";
+                    <body>
+                    <div class='container'>
+                        <h1>Hello {listing.ListingURL}, Listing Created Successfully</h1>
+                        <p>Congratulation! Your Business Listing has Under review. After</p>
+                        <p>review your listing has been live within 48 hour's - My Interior Mart Team.</p>
+                        <p>For any help, connect over WhatsApp: <strong>+91 9876543210</strong></p>
+                        <p>Thank you!<br>Have a wonderful day!!!</p>
+                    </div>
+                </body>
+                </html>";
 
             using (var message = new MailMessage())
             {

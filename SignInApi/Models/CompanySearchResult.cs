@@ -11,5 +11,6 @@
         public int KeywordID { get; set; }
         public string Category { get; set; }   // Category Name
         public int CategoryId { get; set; }    // Category ID
+        public string Specialization { get; set; }
     }
 }

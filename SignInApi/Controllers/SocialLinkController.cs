@@ -12,12 +12,15 @@ namespace SignInApi.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly SocialNetworkRepository _socialNetworkRepository;
         private readonly CompanyDetailsRepository _companydetailsRepository;
-        public SocialLinkController(SocialNetworkRepository socialNetworkRepository, UserService userService, CompanyDetailsRepository companyDetailsRepository , IHttpContextAccessor httpContextAccessor)
+        private readonly BinddetailsManagelistingRepository _binddetailsListing;
+        public SocialLinkController(SocialNetworkRepository socialNetworkRepository, UserService userService, CompanyDetailsRepository companyDetailsRepository , IHttpContextAccessor httpContextAccessor, BinddetailsManagelistingRepository binddetailsListing)
         {
             _socialNetworkRepository = socialNetworkRepository;
             _userService = userService;
             _companydetailsRepository = companyDetailsRepository;
             _httpContextAccessor = httpContextAccessor;
+            _binddetailsListing = binddetailsListing;
+
         }
 
         [HttpPost]
@@ -46,6 +49,44 @@ namespace SignInApi.Controllers
                                 {
                                     OwnerGuid = currentUserGuid,
                                     ListingID = listing.Listingid,
+                                    IPAddress = HttpContext.Connection.RemoteIpAddress.ToString()
+                                };
+                            }
+
+                            // Map properties from CommunicationViewModel to Communication
+
+                            socialnetwork.Facebook = socialnetworkVM.Facebook;
+                            socialnetwork.WhatsappGroupLink = socialnetworkVM.WhatsappGroupLink;
+                            socialnetwork.Linkedin = socialnetworkVM.Linkedin;
+                            socialnetwork.Twitter = socialnetworkVM.Twitter;
+                            socialnetwork.Youtube = socialnetworkVM.Youtube;
+                            socialnetwork.Instagram = socialnetworkVM.Instagram;
+                            socialnetwork.Pinterest = socialnetworkVM.Pinterest;
+
+                            if (recordNotFound)
+                            {
+                                await _socialNetworkRepository.AddAsync(socialnetwork);
+                                return Ok(new { Message = "SocialLink Details created successfully", SocialLink = socialnetwork });
+                            }
+                            else
+                            {
+                                await _socialNetworkRepository.UpdateAsync(socialnetwork);
+                                return Ok(new { Message = "SocialLink Details Updated successfully", Communication = socialnetwork });
+                            }
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+
+                            var socialnetwork = await _socialNetworkRepository.GetSocialNetworkByListingId(listingId);
+                            bool recordNotFound = socialnetwork == null;
+                            if (recordNotFound)
+                            {
+                                socialnetwork = new SocialNetwork
+                                {
+                                    OwnerGuid = currentUserGuid,
+                                    ListingID = listingId,
                                     IPAddress = HttpContext.Connection.RemoteIpAddress.ToString()
                                 };
                             }

@@ -505,8 +505,20 @@ namespace SignInApi.Models
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedLastname = firstRow.Field<string>("LastName") ?? string.Empty;
+                    List<string> Lastname = concatenatedLastname
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
                     string concatenatedDesignation = firstRow.Field<string>("Designation") ?? string.Empty;
                     List<string> Designation = concatenatedDesignation
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+                    string concatenatedPrefix = firstRow.Field<string>("MrndMs") ?? string.Empty;
+                    List<string> Prefix = concatenatedPrefix
                                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                                 .Select(p => p.Trim())
                                                 .ToList();
@@ -521,12 +533,12 @@ namespace SignInApi.Models
                         Imagepath = imagePaths,
                         Designation = Designation,
                         OwnerName = Firstname,
-                        LastName = firstRow.Field<string>("LastName") ?? string.Empty,
+                        LastName = Lastname,
                         craeteddate = firstRow.Field<DateTime>("CreatedDate"),
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
                         CountryId = firstRow.Field<int?>("CountryID") ?? 0,
                         StateId = firstRow.Field<int?>("StateID") ?? 0,
-                        Prefix = firstRow.Field<string>("MrndMs") ?? string.Empty,
+                        Prefix = Prefix,
                     };
                 }
                 return null;
@@ -702,6 +714,124 @@ namespace SignInApi.Models
                     //    craeteddate = row.Field<DateTime>("CreatedDate"),
                     //    updateddate = row.Field<DateTime>("UpdateDate"),
                     //};
+                }
+                return null;
+            }
+        }
+
+        public async Task<int?> GetListingIdByPhoneNumberAsync(string phoneNumber)
+        {
+            try
+            {
+                int? listingId = null;
+
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    string query = @"SELECT ListingID FROM [listing].[Communication] WHERE Mobile = @PhoneNumber";
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@PhoneNumber", phoneNumber);
+
+                        var result = await command.ExecuteScalarAsync();
+
+                        if (result != null && int.TryParse(result.ToString(), out int id))
+                        {
+                            listingId = id;
+                        }
+                    }
+                }
+
+                return listingId;
+            }
+            catch(Exception ex)
+            {
+                throw;
+            }
+            
+        }
+
+        public async Task<Listing> GetListingByListingIdAsync(int listingid)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID = @ListingID", conn);
+                    cmd.Parameters.AddWithValue("@ListingID", listingid);
+                    await conn.OpenAsync();
+                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+                    if (dt.Rows.Count > 0)
+                    {
+                        DataRow row = dt.Rows[0];
+                        return new Listing
+                        {
+                            Listingid = row.Field<int?>("ListingID") ?? 0,
+                            OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                            CreatedDate = row.Field<DateTime?>("CreatedDate") ?? default(DateTime),
+                            CreatedTime = row.Field<DateTime?>("CreatedTime") ?? default(DateTime),
+                            IPAddress = row.Field<string>("IPAddress") ?? string.Empty,
+                            Status = row.Field<int?>("Status") ?? 0,
+                            CompanyName = row.Field<string>("CompanyName") ?? string.Empty,
+                            BusinessCategory = row.Field<string>("BusinessCategory") ?? string.Empty,
+                            NatureOfBusiness = row.Field<string>("NatureOfBusiness") ?? string.Empty,
+                            YearOfEstablishment = row.Field<DateTime>("YearOfEstablishment"),
+                            NumberOfEmployees = row.Field<int?>("NumberOfEmployees") ?? 0,
+                            Turnover = row.Field<string>("Turnover") ?? string.Empty,
+                            GSTNumber = row.Field<string>("GSTNumber") ?? string.Empty,
+                            Description = row.Field<string>("Description") ?? string.Empty,
+                            Name = row.Field<string>("Name") ?? string.Empty,
+                            LastName = row.Field<string>("LastName") ?? string.Empty,
+                            Gender = row.Field<string>("Gender") ?? string.Empty,
+                            Designation = row.Field<string>("Designation") ?? string.Empty,
+                            ListingURL = row.Field<string>("ListingURL") ?? string.Empty,
+                            ApprovedOrRejectedBy = row.Field<bool?>("ApprovedOrRejectedBy") ?? false,
+                            Rejected = row.Field<bool?>("Rejected") ?? false,
+                            Steps = row.Field<int?>("Steps") ?? 0,
+                            Id = row.Field<Guid?>("Id") ?? Guid.Empty,
+                            ClaimedListing = row.Field<bool?>("ClaimedListing") ?? false,
+                            SelfCreated = row.Field<bool?>("SelfCreated") ?? false
+                        };
+                    }
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+        }
+
+        public async Task<Communication> GetCommunicationByClaimListingIdAsync(int listingid)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [listing].[Communication] WHERE ListingID = @ListingID", conn);
+                cmd.Parameters.AddWithValue("@ListingID", listingid);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+                    return new Communication
+                    {
+                        OwnerGuid = row.Field<string>("OwnerGuid") ?? string.Empty,
+                        ListingID = row.Field<int?>("ListingID") ?? 0,
+                        Email = row.Field<string>("Email") ?? string.Empty,
+                        Mobile = row.Field<string>("Mobile") ?? string.Empty,
+                        Telephone = row.Field<string>("Telephone") ?? string.Empty,
+                        TelephoneSecond = row.Field<string>("TelephoneSecond") ?? string.Empty,
+                        Whatsapp = row.Field<string>("Whatsapp") ?? string.Empty,
+                        Website = row.Field<string>("Website") ?? string.Empty,
+                        TollFree = row.Field<string>("TollFree") ?? string.Empty,
+                        IPAddress = row.Field<string>("IPAddress") ?? string.Empty,
+                        Language = row.Field<string>("Language") ?? string.Empty,
+
+                    };
                 }
                 return null;
             }

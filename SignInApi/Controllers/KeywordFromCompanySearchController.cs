@@ -28,26 +28,26 @@ namespace SignInApi.Controllers
             string connectionString = _configuration.GetConnectionString("MimListing");
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = @"
-                SELECT l.ListingID,l.CompanyName,l.ListingURL, c.Name as City, loc.Name as Locality, k.KeywordID, k.SeoKeyword
-                FROM [dbo].[Keyword] k
-                INNER JOIN [listing].[Address] a ON k.ListingID = a.ListingID
-                INNER JOIN [listing].[Listing] l ON a.ListingID = l.ListingID
-                INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-                INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                WHERE k.SeoKeyword LIKE '%' + @Keyword + '%'
-                AND (c.Name LIKE '%' + @Location + '%' OR loc.Name LIKE '%' + @Location + '%')";
-
-
                 //string query = @"
                 //SELECT l.ListingID,l.CompanyName,l.ListingURL, c.Name as City, loc.Name as Locality, k.KeywordID, k.SeoKeyword
                 //FROM [dbo].[Keyword] k
                 //INNER JOIN [listing].[Address] a ON k.ListingID = a.ListingID
                 //INNER JOIN [listing].[Listing] l ON a.ListingID = l.ListingID
-                //INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-                //INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                //INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
+                //INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
                 //WHERE k.SeoKeyword LIKE '%' + @Keyword + '%'
                 //AND (c.Name LIKE '%' + @Location + '%' OR loc.Name LIKE '%' + @Location + '%')";
+
+
+                string query = @"
+                SELECT l.ListingID,l.CompanyName,l.ListingURL, c.Name as City, loc.Name as Locality, k.KeywordID, k.SeoKeyword
+                FROM [dbo].[Keyword] k
+                INNER JOIN [listing].[Address] a ON k.ListingID = a.ListingID
+                INNER JOIN [listing].[Listing] l ON a.ListingID = l.ListingID
+                INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
+                INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                WHERE k.SeoKeyword LIKE '%' + @Keyword + '%'
+                AND (c.Name LIKE '%' + @Location + '%' OR loc.Name LIKE '%' + @Location + '%')";
 
                 SqlCommand cmd = new SqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@Keyword", keyword);

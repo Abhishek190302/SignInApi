@@ -38,6 +38,22 @@ namespace SignInApi.Controllers
                     {
                         string currentUserGuid = applicationUser.Id.ToString();
                         var Companydetails = await _binddetailsListing.GetListingByOwnerIdAsync(currentUserGuid);
+                        if (Companydetails == null)
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+
+                            if (listingId != null)
+                            {
+                                // Get the listing details using the ListingId
+                                var companyDetails = await _binddetailsListing.GetListingByListingIdAsync(listingId);
+                                return Ok(companyDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
                         return Ok(Companydetails);
                     }
                     catch (Exception ex)
@@ -73,8 +89,21 @@ namespace SignInApi.Controllers
                         }
                         else
                         {
-                            var Communication = await _binddetailsListing.GetCommunicationRegisteremailAsync(applicationUser.Email);
-                            return Ok(Communication);
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+
+                            if (listingId != null)
+                            {
+                                var communicationDetails = await _binddetailsListing.GetCommunicationByClaimListingIdAsync(listingId);
+                                return Ok(communicationDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+
+                            //var Communication = await _binddetailsListing.GetCommunicationRegisteremailAsync(applicationUser.Email);
+                            //return Ok(Communication);
                         } 
                     }
                     catch (Exception ex)
@@ -107,6 +136,20 @@ namespace SignInApi.Controllers
                         {
                             var Address = await _binddetailsListing.GetAddressByListingIdAsync(addressdetails.Listingid);
                             return Ok(Address);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var addressDetails = await _binddetailsListing.GetAddressByListingIdAsync(listingId);
+                                return Ok(addressDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -147,9 +190,22 @@ namespace SignInApi.Controllers
                         }
                         else
                         {
-                            var Categories = await _binddetailsListing.GetCategoryByBussinessCategoryAsync(applicationUser.BussinessCategory);
-                            response = new { Category = Categories, AllCategories = categories };
-                            return Ok(response);
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var categoryDetails = await _binddetailsListing.GetCategoryByListingIdAsync(listingId);
+                                response = new { Category = categoryDetails, AllCategories = categories };
+                                return Ok(response);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+
+                            //var Categories = await _binddetailsListing.GetCategoryByBussinessCategoryAsync(applicationUser.BussinessCategory);
+                            //response = new { Category = Categories, AllCategories = categories };
+                            //return Ok(response);
                         }
                     }
                     catch (Exception ex)
@@ -183,6 +239,20 @@ namespace SignInApi.Controllers
                             var Specialization = await _binddetailsListing.GetSpecialisationByListingId(specializationdetails.Listingid);
                             return Ok(Specialization);
                         }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var specializationDetails = await _binddetailsListing.GetSpecialisationByListingId(listingId);
+                                return Ok(specializationDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -214,6 +284,20 @@ namespace SignInApi.Controllers
                         {
                             var WorkingHourse = await _binddetailsListing.GetWorkingHoursByListingId(workinghoursdetails.Listingid);
                             return Ok(WorkingHourse);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var workingDetails = await _binddetailsListing.GetWorkingHoursByListingId(listingId);
+                                return Ok(workingDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -247,6 +331,20 @@ namespace SignInApi.Controllers
                             var PaymentMode = await _binddetailsListing.GetPaymentModeByListingId(paymentmodedetails.Listingid);
                             return Ok(PaymentMode);
                         }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var paymentDetails = await _binddetailsListing.GetPaymentModeByListingId(listingId);
+                                return Ok(paymentDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -278,6 +376,20 @@ namespace SignInApi.Controllers
                         {
                             var AddSocialLink = await _binddetailsListing.GetSocialNetworkByListingId(addsociallinkdetails.Listingid);
                             return Ok(AddSocialLink);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var sociallinkDetails = await _binddetailsListing.GetSocialNetworkByListingId(listingId);
+                                return Ok(sociallinkDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -312,6 +424,20 @@ namespace SignInApi.Controllers
                             var LogoImage = await _binddetailsListing.GetlogoImageByListingIdAsync(logoimagedetails.Listingid);
                             return Ok(LogoImage);
                         }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var logoDetails = await _binddetailsListing.GetlogoImageByListingIdAsync(listingId);
+                                return Ok(logoDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -343,6 +469,20 @@ namespace SignInApi.Controllers
                         {
                             var OwnerImage = await _binddetailsListing.GetOwnerImageByListingIdAsync(ownerimagedetails.Listingid);
                             return Ok(OwnerImage);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var ownerDetails = await _binddetailsListing.GetOwnerImageByListingIdAsync(listingId);
+                                return Ok(ownerDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -376,6 +516,20 @@ namespace SignInApi.Controllers
                             var GalleryImage = await _binddetailsListing.GetGallerysImageByListingIdAsync(galleryimagedetails.Listingid);
                             return Ok(GalleryImage);
                         }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var galleyDetails = await _binddetailsListing.GetGallerysImageByListingIdAsync(listingId);
+                                return Ok(galleyDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -407,6 +561,20 @@ namespace SignInApi.Controllers
                         {
                             var BannerImage = await _binddetailsListing.GetBannerImageByListingIdAsync(bannerimagedetails.Listingid);
                             return Ok(BannerImage);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var bannerDetails = await _binddetailsListing.GetBannerImageByListingIdAsync(listingId);
+                                return Ok(bannerDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -440,6 +608,20 @@ namespace SignInApi.Controllers
                             var CertificationImage = await _binddetailsListing.GetCertificateImageByListingIdAsync(certificationimagedetails.Listingid);
                             return Ok(CertificationImage);
                         }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var certificateDetails = await _binddetailsListing.GetCertificateImageByListingIdAsync(listingId);
+                                return Ok(certificateDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -471,6 +653,20 @@ namespace SignInApi.Controllers
                         {
                             var ClientImage = await _binddetailsListing.GetClientImageByListingIdAsync(clientimagedetails.Listingid);
                             return Ok(ClientImage);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var clientDetails = await _binddetailsListing.GetClientImageByListingIdAsync(listingId);
+                                return Ok(clientDetails);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
                         }
                     }
                     catch (Exception ex)

@@ -77,7 +77,9 @@ namespace SignInApi.Models
                                 ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
-                                GSTNumber = reader.GetString(reader.GetOrdinal("GSTNumber")),
+                                //GSTNumber = reader.GetString(reader.GetOrdinal("GSTNumber")),
+                                GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
+
                             };
 
                             // Calculate BusinessYear
@@ -193,7 +195,8 @@ namespace SignInApi.Models
                                 ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
                                 ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
-                                ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing"))
+                                ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
+                                GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
                             };
 
                             // Calculate BusinessYear

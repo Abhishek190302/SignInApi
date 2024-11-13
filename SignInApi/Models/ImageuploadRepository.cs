@@ -49,9 +49,8 @@ namespace SignInApi.Models
         {
             using (SqlConnection conn = new SqlConnection(_connectionstring))
             {
-                // Modify the query to fetch all relevant details
                 SqlCommand cmd = new SqlCommand(
-                    "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID " +
+                    "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID, MrndMs " +
                     "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
                 cmd.Parameters.AddWithValue("@ListingID", listingId);
 
@@ -64,10 +63,14 @@ namespace SignInApi.Models
                 {
                     DataRow firstRow = dt.Rows[0];
 
-                    // Create a list to hold all image paths
+                    // Lists to hold all paths, names, and designations
                     List<string> imagePaths = new List<string>();
-                    List<string> Firstnames = new List<string>();
-                    List<string> Designations = new List<string>();
+                    List<string> firstNames = new List<string>();
+                    List<string> lastNames = new List<string>();
+                    List<string> designations = new List<string>();
+                    List<string> prefixs = new List<string>();
+
+                    // Iterate through all rows to fill lists
                     foreach (DataRow row in dt.Rows)
                     {
                         string imagePath = row.Field<string>("ImagePath");
@@ -75,41 +78,126 @@ namespace SignInApi.Models
                         {
                             imagePaths.Add(imagePath);
                         }
-                    }
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        string firstname = row.Field<string>("OwnerName");
-                        if (!string.IsNullOrEmpty(firstname))
+
+                        string firstName = row.Field<string>("OwnerName");
+                        if (!string.IsNullOrEmpty(firstName))
                         {
-                            Firstnames.Add(firstname);
+                            firstNames.Add(firstName);
                         }
-                    }
-                    foreach (DataRow row in dt.Rows)
-                    {
+
+                        string lastName = row.Field<string>("LastName");
+                        if (!string.IsNullOrEmpty(lastName))
+                        {
+                            lastNames.Add(lastName);
+                        }
+
                         string designation = row.Field<string>("Designation");
                         if (!string.IsNullOrEmpty(designation))
                         {
-                            Designations.Add(designation);
+                            designations.Add(designation);
+                        }
+
+                        string prefix = row.Field<string>("MrndMs");
+                        if (!string.IsNullOrEmpty(prefix))
+                        {
+                            prefixs.Add(prefix);
                         }
                     }
 
+                    // Return the populated OwnerImage object with correct mappings
                     return new OwnerImage
                     {
                         OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
                         Listingid = firstRow.Field<int?>("ListingID") ?? 0,
                         Imagepath = imagePaths,
-                        Designation = Firstnames,
-                        OwnerName = Designations,
-                        LastName = firstRow.Field<string>("LastName") ?? string.Empty,
+                        OwnerName = firstNames,       // Correctly map to firstNames
+                        LastName = lastNames,         // Correctly map to lastNames
+                        Designation = designations,   // Correctly map to designations
                         craeteddate = firstRow.Field<DateTime>("CreatedDate"),
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
                         CountryId = firstRow.Field<int?>("CountryID") ?? 0,
                         StateId = firstRow.Field<int?>("StateID") ?? 0,
+                        Prefix = prefixs
                     };
                 }
                 return null;
             }
         }
+
+        //public async Task<OwnerImage> GetOwnerImageByListingIdAsync(int listingId)
+        //{
+        //    using (SqlConnection conn = new SqlConnection(_connectionstring))
+        //    {
+        //        // Modify the query to fetch all relevant details
+        //        SqlCommand cmd = new SqlCommand(
+        //            "SELECT OwnerGuid, ListingID, ImagePath, Designation, OwnerName, LastName, CreatedDate, UpdateDate, CountryID, StateID " +
+        //            "FROM [dbo].[OwnerImage] WHERE ListingID = @ListingID", conn);
+        //        cmd.Parameters.AddWithValue("@ListingID", listingId);
+
+        //        await conn.OpenAsync();
+        //        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+        //        DataTable dt = new DataTable();
+        //        adapter.Fill(dt);
+
+        //        if (dt.Rows.Count > 0)
+        //        {
+        //            DataRow firstRow = dt.Rows[0];
+
+        //            // Create a list to hold all image paths
+        //            List<string> imagePaths = new List<string>();
+        //            List<string> Firstnames = new List<string>();
+        //            List<string> Lastnames = new List<string>();
+        //            List<string> Designations = new List<string>();
+        //            foreach (DataRow row in dt.Rows)
+        //            {
+        //                string imagePath = row.Field<string>("ImagePath");
+        //                if (!string.IsNullOrEmpty(imagePath))
+        //                {
+        //                    imagePaths.Add(imagePath);
+        //                }
+        //            }
+        //            foreach (DataRow row in dt.Rows)
+        //            {
+        //                string firstname = row.Field<string>("OwnerName");
+        //                if (!string.IsNullOrEmpty(firstname))
+        //                {
+        //                    Firstnames.Add(firstname);
+        //                }
+        //            }
+        //            foreach (DataRow row in dt.Rows)
+        //            {
+        //                string lastname = row.Field<string>("LastName");
+        //                if (!string.IsNullOrEmpty(lastname))
+        //                {
+        //                    Lastnames.Add(lastname);
+        //                }
+        //            }
+        //            foreach (DataRow row in dt.Rows)
+        //            {
+        //                string designation = row.Field<string>("Designation");
+        //                if (!string.IsNullOrEmpty(designation))
+        //                {
+        //                    Designations.Add(designation);
+        //                }
+        //            }
+
+        //            return new OwnerImage
+        //            {
+        //                OwnerGuid = firstRow.Field<string>("OwnerGuid") ?? string.Empty,
+        //                Listingid = firstRow.Field<int?>("ListingID") ?? 0,
+        //                Imagepath = imagePaths,
+        //                Designation = Firstnames,
+        //                OwnerName = Designations,
+        //                LastName = Lastnames,
+        //                craeteddate = firstRow.Field<DateTime>("CreatedDate"),
+        //                updateddate = firstRow.Field<DateTime>("UpdateDate"),
+        //                CountryId = firstRow.Field<int?>("CountryID") ?? 0,
+        //                StateId = firstRow.Field<int?>("StateID") ?? 0,
+        //            };
+        //        }
+        //        return null;
+        //    }
+        //}
 
         //public async Task<OwnerImage> GetOwnerImageByListingIdAsync(int listingId)
         //{
@@ -354,12 +442,12 @@ namespace SignInApi.Models
         public List<string> Imagepath { get; set; }
         public List<string> Designation { get; set; }
         public List<string> OwnerName { get; set; }
-        public string LastName { get; set; }
+        public List<string> LastName { get; set; }
         public DateTime craeteddate { get;set; }
         public DateTime updateddate { get; set; }
         public int CountryId { get; set; }
         public int StateId { get; set; }
-        public string Prefix { get; set; }
+        public List<string> Prefix { get; set; }
     }
 
     public class GallerysImage

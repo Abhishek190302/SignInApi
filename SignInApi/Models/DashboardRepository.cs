@@ -227,7 +227,8 @@ namespace SignInApi.Models
                 foreach (DataRow row in dt.Rows)
                 {
                     activities.Add(new ListingActivity
-                    {
+                    { 
+                        Enquirycomment = row["EnquiryTitle"].ToString(),
                         UserGuid = row["OwnerGuid"].ToString(),
                         VisitDate = Convert.ToDateTime(row["CreatedDate"])
                     });
@@ -252,6 +253,7 @@ namespace SignInApi.Models
                 {
                     activities.Add(new ListingActivity
                     {
+                        Reviewcomment = row["Comment"].ToString(),
                         UserGuid = row["OwnerGuid"].ToString(),
                         VisitDate = Convert.ToDateTime(row["Date"])
                     });
@@ -259,7 +261,6 @@ namespace SignInApi.Models
             }
             return activities;
         }
-
 
         public async Task<Profile> GetProfileByOwnerGuidAsync(string ownerGuid)
         {
@@ -280,6 +281,7 @@ namespace SignInApi.Models
                     profile = new Profile
                     {
                         Name = row["Name"].ToString(),
+                        Gender = row["Gender"].ToString(),
                         ImageUrl = row["ImageUrl"].ToString()
                     };
                 }
@@ -325,12 +327,16 @@ namespace SignInApi.Models
 
             var listingActivityVMs = listingActivities.Select(x => new ListingActivityVM
             {
+
                 OwnerGuid = x.UserGuid,
                 CompanyName = listing.CompanyName,
                 VisitDate = x.VisitDate.ToString(Constantss.dateFormat1),
+                TimeAgo = GetTimeAgo(x.VisitDate),
                 ActivityType = activityType,
                 ActivityText = activityText,
-                isNotification = isNotification
+                isNotification = isNotification,
+                ReviewComment = x.Reviewcomment,
+                EnquiryComment = x.Enquirycomment
             }).ToList();
 
             foreach (var activity in listingActivityVMs)
@@ -340,11 +346,41 @@ namespace SignInApi.Models
                 if (profile != null)
                 {
                     activity.UserName = profile.Name;
+                    activity.Gender = profile.Gender;
                     activity.ProfileImage = string.IsNullOrWhiteSpace(profile.ImageUrl) ? "resources/img/icon/profile.svg" : profile.ImageUrl;
                 }
             }
 
             return listingActivityVMs;
+        }
+
+        private string GetTimeAgo(DateTime reviewDate)
+        {
+            TimeSpan timeDifference = DateTime.Now - reviewDate;
+
+            if (timeDifference.TotalDays < 1)
+            {
+                if (timeDifference.TotalHours < 1)
+                    return $"{Math.Floor(timeDifference.TotalMinutes)} minutes ago";
+                else
+                    return $"{Math.Floor(timeDifference.TotalHours)} hours ago";
+            }
+            else if (timeDifference.TotalDays < 7)
+            {
+                return $"{Math.Floor(timeDifference.TotalDays)} days ago";
+            }
+            else if (timeDifference.TotalDays < 30)
+            {
+                return $"{Math.Floor(timeDifference.TotalDays / 7)} weeks ago";
+            }
+            else if (timeDifference.TotalDays < 365)
+            {
+                return $"{Math.Floor(timeDifference.TotalDays / 30)} months ago";
+            }
+            else
+            {
+                return $"{Math.Floor(timeDifference.TotalDays / 365)} years ago";
+            }
         }
 
         public async Task<IList<ReviewListingViewModel>> GetReviewsByOwnerIdAsync(string ownerId)

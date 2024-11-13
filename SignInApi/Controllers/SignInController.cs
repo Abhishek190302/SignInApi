@@ -91,8 +91,9 @@ namespace SignInApi.Controllers
                 string message = $"{otp} is your One-Time Password, valid for 10 minutes only. Please do not share your OTP with anyone.";
                 using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
                 {
-                    string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={request.Mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
-                    HttpResponseMessage response = await client.GetAsync("http://" + apiUrl);
+                    string apiUrl = $"http://text.bluemedia.in/http-tokenkeyapi.php?authentic-key=32316d79696e746572696f726d6172743737391729246892&senderid=MYINTR&route=2&number={request.Mobile}&message={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. My Interior Mart Team&templateid=1207172949721443133";
+                    //string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={request.Mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
+                    HttpResponseMessage response = await client.GetAsync(apiUrl);
                     if (response.IsSuccessStatusCode)
                     {
                         string responseContent = await response.Content.ReadAsStringAsync();
@@ -252,8 +253,9 @@ namespace SignInApi.Controllers
                     {
                         using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
                         {
-                            string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
-                            HttpResponseMessage response = await client.GetAsync("http://" + apiUrl);
+                            string apiUrl = $"http://text.bluemedia.in/http-tokenkeyapi.php?authentic-key=32316d79696e746572696f726d6172743737391729246892&senderid=MYINTR&route=2&number={mobile}&message={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. My Interior Mart Team&templateid=1207172949721443133";
+                            //string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
+                            HttpResponseMessage response = await client.GetAsync(apiUrl);
                             if (!response.IsSuccessStatusCode)
                             {
                                 return StatusCode((int)response.StatusCode, "Failed to send OTP via SMS.");
@@ -441,8 +443,9 @@ namespace SignInApi.Controllers
                                 {
                                     using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
                                     {
-                                        string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
-                                        HttpResponseMessage response = await client.GetAsync("http://" + apiUrl);
+                                        string apiUrl = $"http://text.bluemedia.in/http-tokenkeyapi.php?authentic-key=32316d79696e746572696f726d6172743737391729246892&senderid=MYINTR&route=2&number={mobile}&message={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. My Interior Mart Team&templateid=1207172949721443133";
+                                        //string apiUrl = $"vas.hexaroute.com/api.php?username=myinteriormart&password=pass1234&route=1&sender=MyIntM&mobile[]={mobile}&message[]={otp} is your login code and is valid for 10 minutes. Do not share the OTP with anyone. my Interior Mart Team&te_id=1207172509456648630";
+                                        HttpResponseMessage response = await client.GetAsync(apiUrl);
                                         if (!response.IsSuccessStatusCode)
                                         {
                                             return StatusCode((int)response.StatusCode, "Failed to send OTP via SMS.");

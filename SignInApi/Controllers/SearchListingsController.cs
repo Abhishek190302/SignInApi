@@ -15,85 +15,10 @@ namespace SignInApi.Controllers
             _searchRepository = searchListingRepository;
         }
 
-        //[HttpGet]
-        //[Route("search")]
-        //public async Task<ActionResult<IEnumerable<SearchHomeListingViewModel>>> SearchListings(string searchText)
-        //{
-        //    var listings = await _searchRepository.GetApprovedListings();
-        //    if (listings == null || !listings.Any())
-        //        return Ok(new List<SearchHomeListingViewModel>());
-
-        //    var listingsWithAddress = listings.Where(x => x.Address != null).ToList();
-        //    if (!listingsWithAddress.Any())
-        //        return Ok(new List<SearchHomeListingViewModel>());
-
-        //    var filteredListings = listingsWithAddress.Where(async x => x.CompanyName.ToLower().Contains(searchText.ToLower()) || await _searchRepository.IsListingInCategory(x.Id, searchText.ToLower())).ToList();
-        //    if (!filteredListings.Any())
-        //        return Ok(new List<SearchHomeListingViewModel>());
-
-        //    var locationIds = filteredListings.Select(x => x.Address.AssemblyID).ToArray();
-        //    var localities = await _searchRepository.GetLocalitiesByLocalityIds(locationIds);
-
-        //    var result = filteredListings.Select(x => new SearchHomeListingViewModel
-        //    {
-        //        CompanyName = x.CompanyName,
-        //        listingId = x.ListingId,
-        //        ListingUrl = x.ListingURL,
-        //        CityName = localities.FirstOrDefault(l => l.Id == x.Address.AssemblyID)?.City.Name,
-        //        LocalityName = localities.FirstOrDefault(l => l.Id == x.Address.AssemblyID)?.Name
-        //    }).ToList();
-
-        //    return Ok(result);
-        //}
-
         //[HttpGet("search")]
         //public async Task<ActionResult<IEnumerable<SearchHomeListingViewModel>>> SearchListings(string searchText)
         //{
-        //    var listings = await _searchRepository.GetApprovedListings();
-        //    if (listings == null || !listings.Any())
-        //        return Ok(new List<SearchHomeListingViewModel>());
 
-        //    var listingsWithAddress = listings.Where(x => x.Address != null).ToList();
-        //    if (!listingsWithAddress.Any())
-        //        return Ok(new List<SearchHomeListingViewModel>());
-
-        //    var filteredListings = new List<ListingSearch>();
-        //    foreach (var listing in listingsWithAddress)
-        //    {
-        //        if (listing.CompanyName.ToLower().Contains(searchText.ToLower()) ||
-        //            await _searchRepository.IsListingInCategory(int.Parse(listing.ListingId), searchText.ToLower()))
-        //        {
-        //            filteredListings.Add(listing);
-        //        }
-        //    }
-
-        //    if (!filteredListings.Any())
-        //        return Ok(new List<SearchHomeListingViewModel>());
-
-        //    var locationIds = filteredListings.Select(x => x.Address.AssemblyID).ToArray();
-        //    var localities = await _searchRepository.GetLocalitiesByLocalityIds(locationIds);
-
-        //    var result = new List<SearchHomeListingViewModel>();
-        //    foreach (var listing in filteredListings)
-        //    {
-        //        var subcategoryNames = await _searchRepository.GetSubcategoryNames(int.Parse(listing.ListingId));
-        //        result.Add(new SearchHomeListingViewModel
-        //        {
-        //            CompanyName = listing.CompanyName,
-        //            listingId = listing.ListingId,
-        //            ListingUrl = listing.ListingURL,
-        //            CityName = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.City.Name,
-        //            LocalityName = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.Name,
-        //            category = string.Join(", ", subcategoryNames)
-        //        });
-        //    }
-
-        //    return Ok(result);
-        //}
-
-        //[HttpGet("search")]
-        //public async Task<ActionResult<IEnumerable<SearchHomeListingViewModel>>> SearchListings(string searchText)
-        //{
         //    // Retrieve all approved listings
         //    var listings = await _searchRepository.GetApprovedListings();
         //    if (listings == null || !listings.Any())
@@ -111,6 +36,7 @@ namespace SignInApi.Controllers
         //    foreach (var listing in listingsWithAddress)
         //    {
         //        if (listing.CompanyName.ToLower().Contains(searchText.ToLower()) ||
+        //            listing.Keyword.ToLower().Contains(searchText.ToLower()) || // Match on keyword
         //            await _searchRepository.IsListingInCategory(int.Parse(listing.ListingId), searchText.ToLower()) ||
         //            await _searchRepository.IsCategoryMatching(searchText.ToLower()))
         //        {
@@ -153,7 +79,7 @@ namespace SignInApi.Controllers
         //            LocalityName = locality,
         //            category = string.Join(", ", subcategoryNames),
         //            CategoryId = subCategories.FirstOrDefault()?.Id ?? 0,
-        //            keyword = listing.Keyword,
+        //            keyword = listing.Keyword,  // Include the keyword in the result
         //            keywordId = listing.ListingId
         //        });
         //    }
@@ -179,8 +105,10 @@ namespace SignInApi.Controllers
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<SearchHomeListingViewModel>>> SearchListings(string searchText)
         {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return Ok(new List<SearchHomeListingViewModel>());
 
-            // Retrieve all approved listings
+            // Step 1: Retrieve approved listings and filter by non-null addresses
             var listings = await _searchRepository.GetApprovedListings();
             if (listings == null || !listings.Any())
                 return Ok(new List<SearchHomeListingViewModel>());
@@ -189,26 +117,44 @@ namespace SignInApi.Controllers
             if (!listingsWithAddress.Any())
                 return Ok(new List<SearchHomeListingViewModel>());
 
-            // Filter listings based on search text
+            // Step 2: Prepare to match listings based on search text
+            searchText = searchText.ToLower();
             var filteredListings = new List<ListingSearch>();
             string matchingCategoryName = string.Empty;
             int dynamicCategoryId = 0;
 
             foreach (var listing in listingsWithAddress)
             {
-                if (listing.CompanyName.ToLower().Contains(searchText.ToLower()) ||
-                    listing.Keyword.ToLower().Contains(searchText.ToLower()) || // Match on keyword
-                    await _searchRepository.IsListingInCategory(int.Parse(listing.ListingId), searchText.ToLower()) ||
-                    await _searchRepository.IsCategoryMatching(searchText.ToLower()))
+                bool isMatched = false;
+
+                // Check if the CompanyName or Keyword contains the search text
+                if (listing.CompanyName.ToLower().Contains(searchText) ||
+                    listing.Keyword.ToLower().Contains(searchText))
                 {
-                    // Store the exact category name and ID that matched
-                    var matchedCategory = await _searchRepository.GetCategoryByName(searchText.ToLower());
+                    isMatched = true;
+                }
+
+                // Check if listing is in a category matching the search text
+                if (!isMatched && await _searchRepository.IsListingInCategory(int.Parse(listing.ListingId), searchText))
+                {
+                    isMatched = true;
+                }
+
+                // Check if any category matches the search text
+                if (!isMatched)
+                {
+                    var matchedCategory = await _searchRepository.GetCategoryByName(searchText);
                     if (matchedCategory != null)
                     {
                         matchingCategoryName = matchedCategory.Name;
                         dynamicCategoryId = matchedCategory.Id;
+                        isMatched = true;
                     }
+                }
 
+                // Add matched listing to filtered listings
+                if (isMatched)
+                {
                     filteredListings.Add(listing);
                 }
             }
@@ -216,20 +162,23 @@ namespace SignInApi.Controllers
             if (!filteredListings.Any())
                 return Ok(new List<SearchHomeListingViewModel>());
 
-            // Retrieve location details
+            // Step 3: Retrieve locality details based on matched listings
             var locationIds = filteredListings.Select(x => x.Address.AssemblyID).ToArray();
             var localities = await _searchRepository.GetLocalitiesByLocalityIds(locationIds);
 
             var result = new List<SearchHomeListingViewModel>();
 
-            // Add the filtered listings to the result
+            // Step 4: Create the result list with filtered listings
             foreach (var listing in filteredListings)
             {
+                // Get subcategories for each listing
                 var subCategories = await _searchRepository.GetSubcategory(int.Parse(listing.ListingId));
                 var subcategoryNames = subCategories.Select(sub => sub.Name).ToList();
 
-                var city = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.City.Name;
-                var locality = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.Name;
+                // Retrieve city and locality names
+                var localityDetails = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID);
+                var city = localityDetails?.City.Name;
+                var locality = localityDetails?.Name;
 
                 result.Add(new SearchHomeListingViewModel
                 {
@@ -240,12 +189,12 @@ namespace SignInApi.Controllers
                     LocalityName = locality,
                     category = string.Join(", ", subcategoryNames),
                     CategoryId = subCategories.FirstOrDefault()?.Id ?? 0,
-                    keyword = listing.Keyword,  // Include the keyword in the result
+                    keyword = listing.Keyword,
                     keywordId = listing.ListingId
                 });
             }
 
-            // Add a separate result that displays the matching category name with dynamic category ID
+            // Step 5: Add the dynamic category result if a category name matched
             if (!string.IsNullOrEmpty(matchingCategoryName))
             {
                 result.Insert(0, new SearchHomeListingViewModel
@@ -256,140 +205,11 @@ namespace SignInApi.Controllers
                     CityName = null,
                     LocalityName = null,
                     category = matchingCategoryName,
-                    CategoryId = dynamicCategoryId // Pass the dynamic category ID
+                    CategoryId = dynamicCategoryId
                 });
             }
 
             return Ok(result);
         }
-
-        //[HttpGet("search")]
-        //public async Task<ActionResult<IEnumerable<SearchHomeListingViewModel>>> SearchListings(string searchText)
-        //{
-        //    // Retrieve all approved and unapproved listings
-        //    var approvedListings = await _searchRepository.GetApprovedListings();
-        //    var unapprovedListings = await _searchRepository.GetUnapprovedListings();
-
-        //    var result = new List<SearchHomeListingViewModel>();
-
-        //    // Handling approved listings (existing logic)
-        //    if (approvedListings != null && approvedListings.Any())
-        //    {
-        //        var listingsWithAddress = approvedListings.Where(x => x.Address != null).ToList();
-        //        if (listingsWithAddress.Any())
-        //        {
-        //            var filteredListings = new List<ListingSearch>();
-        //            string matchingCategoryName = string.Empty;
-        //            int dynamicCategoryId = 0;
-
-        //            foreach (var listing in listingsWithAddress)
-        //            {
-        //                if (listing.CompanyName.ToLower().Contains(searchText.ToLower()) ||
-        //                    listing.Keyword.ToLower().Contains(searchText.ToLower()) || // Match on keyword
-        //                    await _searchRepository.IsListingInCategory(int.Parse(listing.ListingId), searchText.ToLower()) ||
-        //                    await _searchRepository.IsCategoryMatching(searchText.ToLower()))
-        //                {
-        //                    // Store the exact category name and ID that matched
-        //                    var matchedCategory = await _searchRepository.GetCategoryByName(searchText.ToLower());
-        //                    if (matchedCategory != null)
-        //                    {
-        //                        matchingCategoryName = matchedCategory.Name;
-        //                        dynamicCategoryId = matchedCategory.Id;
-        //                    }
-
-        //                    filteredListings.Add(listing);
-        //                }
-        //            }
-
-        //            if (filteredListings.Any())
-        //            {
-        //                var locationIds = filteredListings.Select(x => x.Address.AssemblyID).ToArray();
-        //                var localities = await _searchRepository.GetLocalitiesByLocalityIds(locationIds);
-
-        //                foreach (var listing in filteredListings)
-        //                {
-        //                    var subCategories = await _searchRepository.GetSubcategory(int.Parse(listing.ListingId));
-        //                    var subcategoryNames = subCategories.Select(sub => sub.Name).ToList();
-
-        //                    var city = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.City.Name;
-        //                    var locality = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.Name;
-
-        //                    result.Add(new SearchHomeListingViewModel
-        //                    {
-        //                        CompanyName = listing.CompanyName,
-        //                        listingId = listing.ListingId,
-        //                        ListingUrl = listing.ListingURL,
-        //                        CityName = city,
-        //                        LocalityName = locality,
-        //                        category = string.Join(", ", subcategoryNames),
-        //                        CategoryId = subCategories.FirstOrDefault()?.Id ?? 0,
-        //                        keyword = listing.Keyword,  // Include the keyword in the result
-        //                        keywordId = listing.ListingId
-        //                    });
-        //                }
-
-        //                if (!string.IsNullOrEmpty(matchingCategoryName))
-        //                {
-        //                    result.Insert(0, new SearchHomeListingViewModel
-        //                    {
-        //                        CompanyName = null,
-        //                        listingId = null,
-        //                        ListingUrl = null,
-        //                        CityName = null,
-        //                        LocalityName = null,
-        //                        category = matchingCategoryName,
-        //                        CategoryId = dynamicCategoryId
-        //                    });
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    // Handling unapproved listings (new logic)
-        //    if (unapprovedListings != null && unapprovedListings.Any())
-        //    {
-        //        var filteredUnapprovedListings = new List<ListingFreeSearch>();
-
-        //        foreach (var listing in unapprovedListings)
-        //        {
-        //            if (listing.Keyword.ToLower().Contains(searchText.ToLower()) || // Match on keyword
-        //                listing.Address?.ToLower().Contains(searchText.ToLower()) == true || // Match on address
-        //                listing.OwnerName?.ToLower().Contains(searchText.ToLower()) == true) // Match on owner name
-        //            {
-        //                filteredUnapprovedListings.Add(listing);
-        //            }
-        //        }
-
-        //        if (filteredUnapprovedListings.Any())
-        //        {
-        //            var locationIds = filteredUnapprovedListings.Select(x => x.Address.AssemblyID).ToArray();
-        //            var localities = await _searchRepository.GetLocalitiesByLocalityIds(locationIds);
-
-        //            foreach (var listing in filteredUnapprovedListings)
-        //            {
-        //                var subCategories = await _searchRepository.GetSubcategory(int.Parse(listing.ListingId));
-        //                var subcategoryNames = subCategories.Select(sub => sub.Name).ToList();
-
-        //                var city = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.City.Name;
-        //                var locality = localities.FirstOrDefault(l => l.Id == listing.Address.AssemblyID)?.Name;
-
-        //                result.Add(new SearchHomeListingViewModel
-        //                {
-        //                    CompanyName = listing.CompanyName,
-        //                    listingId = listing.ListingId,
-        //                    ListingUrl = listing.ListingURL,
-        //                    CityName = city,
-        //                    LocalityName = locality,
-        //                    category = string.Join(", ", subcategoryNames),
-        //                    CategoryId = subCategories.FirstOrDefault()?.Id ?? 0,
-        //                    keyword = listing.Keyword,  // Include the keyword in the result
-        //                    keywordId = listing.ListingId
-        //                });
-        //            }
-        //        }
-        //    }
-
-        //    return Ok(result);
-        //}
     }
 }

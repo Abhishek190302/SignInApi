@@ -169,8 +169,20 @@ namespace SignInApi.Controllers
                                                 .Select(p => p.Trim())
                                                 .ToList();
 
+                    string concatenatedLastname = firstRow.Field<string>("LastName") ?? string.Empty;
+                    List<string> Lastname = concatenatedLastname
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
                     string concatenatedDesignation = firstRow.Field<string>("Designation") ?? string.Empty;
                     List<string> Designation = concatenatedDesignation
+                                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(p => p.Trim())
+                                                .ToList();
+
+                    string concatenatedPrefix = firstRow.Field<string>("MrndMs") ?? string.Empty;
+                    List<string> Prefix = concatenatedPrefix
                                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                                 .Select(p => p.Trim())
                                                 .ToList();
@@ -187,12 +199,12 @@ namespace SignInApi.Controllers
                         Imagepath = imagePaths,
                         Designation = Designation,
                         OwnerName = Firstname,
-                        LastName = firstRow.Field<string>("LastName") ?? string.Empty,
+                        LastName = Lastname,
                         craeteddate = firstRow.Field<DateTime>("CreatedDate"),
                         updateddate = firstRow.Field<DateTime>("UpdateDate"),
                         CountryId = firstRow.Field<int?>("CountryID") ?? 0,
                         StateId = firstRow.Field<int?>("StateID") ?? 0,
-                        Prefix = firstRow.Field<string>("MrndMs") ?? string.Empty,
+                        Prefix = Prefix,
                     };
                 }
                 return null;

@@ -70,6 +70,71 @@ namespace SignInApi.Controllers
         }
 
 
+        //[HttpGet]
+        //[Route("ClaimedUpdateListing")]
+        //public async Task<IActionResult> ClaimedUpdateListing()
+        //{
+        //    string connectionString = _configuration.GetConnectionString("MimListing");
+
+        //    var user = _httpContextAccessor.HttpContext.User;
+        //    if (user.Identity.IsAuthenticated)
+        //    {
+        //        var userName = user.Identity.Name;
+
+        //        var applicationUser = await _userService.GetUserByUserName(userName);
+        //        if (applicationUser != null)
+        //        {
+        //            try
+        //            {
+
+        //                using (SqlConnection connection = new SqlConnection(connectionString))
+        //                {
+        //                    connection.Open();
+        //                    SqlCommand selectCommand = new SqlCommand("SELECT ClaimedListing FROM [listing].[Listing] WHERE ListingID = @ListingId", connection);
+        //                    selectCommand.Parameters.AddWithValue("@ListingId", listing.Listingid);
+
+        //                    object result = selectCommand.ExecuteScalar();
+
+        //                    if (result == null)
+        //                    {
+        //                        return NotFound(new { Message = "Listing not found." });
+        //                    }
+
+        //                    int claimedListing = Convert.ToInt32(result);
+
+        //                    if (claimedListing == 1)
+        //                    {
+        //                        SqlCommand updateCommand = new SqlCommand("UPDATE [listing].[Listing] SET ClaimedListing = 0,Status = 1 WHERE ListingID = @ListingId", connection);
+        //                        updateCommand.Parameters.AddWithValue("@ListingId", listing.Listingid);
+        //                        int rowsAffected = updateCommand.ExecuteNonQuery();
+
+        //                        if (rowsAffected > 0)
+        //                        {
+        //                            return Ok(new { Message = "Your listing has been successfully claimed." });
+        //                        }
+        //                        else
+        //                        {
+        //                            return StatusCode(500, new { Message = "Error updating listing." });
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        return Ok(new { Message = "No update needed. ClaimedListing is already 0." });
+        //                    }
+        //                }
+
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                throw;
+        //            }
+        //        }
+        //        return NotFound("User Not Found");
+        //    }
+        //    return Unauthorized();
+        //}
+
+
         [HttpGet]
         [Route("ClaimedUpdateListing")]
         public async Task<IActionResult> ClaimedUpdateListing()
@@ -86,13 +151,25 @@ namespace SignInApi.Controllers
                 {
                     try
                     {
-                        string currentUserGuid = applicationUser.Id.ToString();
-                        var listing = await _companydetailsRepository.GetListingByOwnerIdAsync(currentUserGuid);
                         using (SqlConnection connection = new SqlConnection(connectionString))
                         {
                             connection.Open();
+
+                            // Step 1: Retrieve ListingID based on mobile number from Communication table
+                            SqlCommand getListingIdCommand = new SqlCommand("SELECT ListingID FROM [listing].[Communication] WHERE Mobile = @Mobile", connection);
+                            getListingIdCommand.Parameters.AddWithValue("@Mobile", userName);
+                            object listingIdResult = getListingIdCommand.ExecuteScalar();
+
+                            if (listingIdResult == null)
+                            {
+                                return NotFound(new { Message = "Listing not found for the given mobile number." });
+                            }
+
+                            int listingId = Convert.ToInt32(listingIdResult);
+
+                            // Step 2: Check the ClaimedListing status in the Listing table
                             SqlCommand selectCommand = new SqlCommand("SELECT ClaimedListing FROM [listing].[Listing] WHERE ListingID = @ListingId", connection);
-                            selectCommand.Parameters.AddWithValue("@ListingId", listing.Listingid);
+                            selectCommand.Parameters.AddWithValue("@ListingId", listingId);
 
                             object result = selectCommand.ExecuteScalar();
 
@@ -105,8 +182,9 @@ namespace SignInApi.Controllers
 
                             if (claimedListing == 1)
                             {
-                                SqlCommand updateCommand = new SqlCommand("UPDATE [listing].[Listing] SET ClaimedListing = 0,Status = 1 WHERE ListingID = @ListingId", connection);
-                                updateCommand.Parameters.AddWithValue("@ListingId", listing.Listingid);
+                                // Step 3: Update ClaimedListing and Status
+                                SqlCommand updateCommand = new SqlCommand("UPDATE [listing].[Listing] SET ClaimedListing = 0, Status = 1 WHERE ListingID = @ListingId", connection);
+                                updateCommand.Parameters.AddWithValue("@ListingId", listingId);
                                 int rowsAffected = updateCommand.ExecuteNonQuery();
 
                                 if (rowsAffected > 0)
@@ -123,11 +201,10 @@ namespace SignInApi.Controllers
                                 return Ok(new { Message = "No update needed. ClaimedListing is already 0." });
                             }
                         }
-
                     }
                     catch (Exception ex)
                     {
-                        throw;
+                        return StatusCode(500, new { Message = "An error occurred.", Error = ex.Message });
                     }
                 }
                 return NotFound("User Not Found");
