@@ -104,6 +104,9 @@ namespace SignInApi.Models
                             // Fetch category details
                             listing.SubCategory = await GetSubcategory(listingId);
 
+                            // Fetch keyword details
+                            listing.Keyword = await GetKeywordsAsync(listingId);
+
                             // Fetch Descreption details
                             listing.Description = await GetDescription(listingId);
 
@@ -152,7 +155,7 @@ namespace SignInApi.Models
         }
 
 
-        public async Task<List<ListingResult>> GetListingsid(int subCategoryid, string cityName, int listingIds)
+        public async Task<List<ListingResult>> GetListingsid(int subCategoryid, string cityName, string Keywords)
         {
             var listings = new List<ListingResult>();
             try
@@ -163,19 +166,23 @@ namespace SignInApi.Models
                     // Fetch listings
                     //var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
 
-                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
-                    //    "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
-                    //    "ON l.ListingID = a.ListingID JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
-                    //    "WHERE (@ListingId IS NULL OR l.ListingID = @ListingId) AND c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName)" +
-                    //    "ORDER BY l.ListingID; ", conn);
+                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
+                    //    "JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                    //    "JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                    //    "JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
+                    //    "JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
+                    //    "WHERE k.SeoKeyword = @Keywords AND c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
+                    //    "ORDER BY l.ListingID;", conn);
 
-                    var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
-                       "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
-                       "ON l.ListingID = a.ListingID JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
-                       "WHERE (@ListingId IS NULL OR l.ListingID = @ListingId) AND c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName)" +
-                       "ORDER BY l.ListingID; ", conn);
+                    var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
+                       "JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                       "JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                       "JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                       "JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
+                       "WHERE k.SeoKeyword = @Keywords AND c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
+                       "ORDER BY l.ListingID;", conn);
 
-                    listingCmd.Parameters.AddWithValue("@ListingId", listingIds);
+                    listingCmd.Parameters.AddWithValue("@Keywords", Keywords);
                     listingCmd.Parameters.AddWithValue("@SubCategoryId", subCategoryid);
                     listingCmd.Parameters.AddWithValue("@CityName", cityName);
 
@@ -217,6 +224,9 @@ namespace SignInApi.Models
 
                             // Fetch Turnover details
                             listing.Turnover = await GetTurnover(listingId);
+
+                            // Fetch keyword details
+                            listing.Keyword = await GetKeywordsAsync(listingId);
 
                             // Fetch category details
                             listing.SubCategory = await GetSubcategory(listingId);
@@ -588,6 +598,34 @@ namespace SignInApi.Models
                     return null;
                 }
             }
+        }
+
+        private async Task<List<SeoKeyword>> GetKeywordsAsync(int listingId)
+        {
+            var keywords = new List<SeoKeyword>();
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (SqlCommand cmd = new SqlCommand("SELECT KeywordID, SeoKeyword FROM [dbo].[Keyword] WHERE ListingID = @ListingId", conn))
+                {
+                    cmd.Parameters.AddWithValue("@ListingId", listingId);
+
+                    using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            keywords.Add(new SeoKeyword
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("KeywordID")),
+                                Name = reader.GetString(reader.GetOrdinal("SeoKeyword"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            return keywords;
         }
 
         private async Task<(int RatingCount, double RatingAverage)> GetRating(int listingId)

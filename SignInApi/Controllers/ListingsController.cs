@@ -40,12 +40,12 @@ namespace SignInApi.Controllers
 
 
         [HttpGet]
-        [Route("GetCategoriesListingid")]
-        public async Task<IActionResult> GetCategoriesListingid(int subCategoryid = 94, string cityName = null, int liistingId = 10881)
+        [Route("GetCategoriesListingByKeyword")]
+        public async Task<IActionResult> GetCategoriesListingByKeyword(int subCategoryid = 94, string cityName = null, string Keywords = null)
         {
             try
             {
-                var listings = await _listingService.GetListingsid(subCategoryid, cityName, liistingId);
+                var listings = await _listingService.GetListingsid(subCategoryid, cityName, Keywords);
                 return Ok(listings);
 
             }
