@@ -27,7 +27,7 @@ namespace SignInApi.Models
             _logger = logger;
         }
 
-        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int subCategoryid, string cityName = null)
+        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int? subCategoryid, string cityName = null)
         {
             var listings = new List<ListingResult>();
             try
@@ -41,18 +41,30 @@ namespace SignInApi.Models
                     // Fetch listings
                     //var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
 
+                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
+                    //    "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                    //    "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                    //    "LEFT JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
+                    //    "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
+                    //    "WHERE c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
+                    //    "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC " +
+                    //    "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+
                     //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
-                    //    "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
-                    //    "ON l.ListingID = a.ListingID JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
-                    //    "WHERE c.SecondCategoryID = @SubCategoryId  AND(@CityName IS NULL OR city.Name = @CityName) " +
-                    //    "ORDER BY l.ListingID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+                    //   "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
+                    //   "ON l.ListingID = a.ListingID JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                    //   "WHERE c.SecondCategoryID = @SubCategoryId  AND(@CityName IS NULL OR city.Name = @CityName) " +
+                    //   "ORDER BY l.ListingID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
-                    var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
-                       "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
-                       "ON l.ListingID = a.ListingID JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
-                       "WHERE c.SecondCategoryID = @SubCategoryId  AND(@CityName IS NULL OR city.Name = @CityName) " +
-                       "ORDER BY l.ListingID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
+                    var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
+                        "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                        "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                        "LEFT JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                        "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
+                        "WHERE c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
+                        "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC " +
+                        "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
 
                     listingCmd.Parameters.AddWithValue("@Offset", offset);
@@ -79,7 +91,7 @@ namespace SignInApi.Models
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
                                 //GSTNumber = reader.GetString(reader.GetOrdinal("GSTNumber")),
                                 GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
-
+                                PackageID = reader.IsDBNull(reader.GetOrdinal("PackageID")) ? 0 : reader.GetInt32(reader.GetOrdinal("PackageID")),
                             };
 
                             // Calculate BusinessYear
@@ -204,6 +216,7 @@ namespace SignInApi.Models
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
                                 GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
+                                PackageID = reader.IsDBNull(reader.GetOrdinal("PackageID")) ? 0 : reader.GetInt32(reader.GetOrdinal("PackageID")),
                             };
 
                             // Calculate BusinessYear
@@ -264,6 +277,143 @@ namespace SignInApi.Models
                             // Fetch Review Details
                             listing.Reviews = await GetReviews(listingId);
 
+                            listings.Add(listing);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching listings");
+                throw;
+            }
+
+            return listings;
+        }
+
+        public async Task<List<ListingResult>> GetListingsKeywordlocation(int pageNumber, int pageSize,string cityName, string Keywords)
+        {
+            var listings = new List<ListingResult>();
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    await conn.OpenAsync();
+
+                    int offset = (pageNumber - 1) * pageSize;
+
+                    bool isGstNumber = Regex.IsMatch(Keywords ?? string.Empty, @"^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$");
+
+                    //string query = "SELECT DISTINCT l.*, a.City,CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END AS PriceOrder, CAST(p.Price AS INT) AS PriceValue FROM [listing].[Listing] l " +
+                    //       "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                    //       "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                    //       "LEFT JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
+                    //       "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
+                    //       "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
+                    //       "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
+                    //       "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
+                    //       "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC " +
+                    //       "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+
+                    string query = "SELECT DISTINCT l.*, a.City,CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END AS PriceOrder, CAST(p.Price AS INT) AS PriceValue FROM [listing].[Listing] l " +
+                           "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                           "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                           "LEFT JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                           "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
+                           "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
+                           "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
+                           "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
+                           "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC " +
+                           "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+
+                    var listingCmd = new SqlCommand(query, conn);
+                    listingCmd.Parameters.AddWithValue("@Offset", offset);
+                    listingCmd.Parameters.AddWithValue("@PageSize", pageSize);
+                    listingCmd.Parameters.AddWithValue("@CityName", cityName ?? (object)DBNull.Value);
+                    listingCmd.Parameters.AddWithValue("@Keywords", Keywords ?? (object)DBNull.Value);
+                    listingCmd.Parameters.AddWithValue("@IsGstNumber", isGstNumber ? 1 : 0);
+
+                    using (SqlDataReader reader = await listingCmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int listingId = reader.GetInt32(reader.GetOrdinal("ListingID"));
+                            string userGuid = reader.GetString(reader.GetOrdinal("OwnerGuid"));
+                            var listing = new ListingResult
+                            {
+                                ListingId = listingId,
+                                OwnerId = userGuid,
+                                Id = reader.GetGuid(reader.GetOrdinal("Id")).ToString(),
+                                CompanyName = reader.GetString(reader.GetOrdinal("CompanyName")),
+                                Url = reader.GetString(reader.GetOrdinal("ListingURL")),
+                                ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
+                                ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
+                                ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
+                                GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
+                                PackageID = reader.IsDBNull(reader.GetOrdinal("PackageID")) ? 0 : reader.GetInt32(reader.GetOrdinal("PackageID")),
+                            };
+
+                            // Calculate BusinessYear
+                            DateTime yearOfEstablishment = reader.GetDateTime(reader.GetOrdinal("YearOfEstablishment"));
+                            listing.BusinessYear = DateTime.Now.Year - yearOfEstablishment.Year;
+
+                            //// Fetch logo image
+                            listing.LogoImage = await GetLogoImageByListingId(listingId);
+
+                            // Fetch business working hours
+                            listing.BusinessWorking = await IsBusinessOpen(listingId);
+
+                            // Fetch workingHours
+                            listing.Workingtime = await GetWorkingHoursByListingId(listingId);
+
+                            // Fetch NumberOfEmployees details
+                            listing.NumberOfEmployees = await GetNumberofEmployee(listingId);
+
+                            // Fetch Turnover details
+                            listing.Turnover = await GetTurnover(listingId);
+
+                            // Fetch keyword details
+                            listing.Keyword = await GetKeywordsAsync(listingId);
+
+                            // Fetch category details
+                            listing.SubCategory = await GetSubcategory(listingId);
+
+                            // Fetch Descreption details
+                            listing.Description = await GetDescription(listingId);
+
+                            // Fetch YearOfEstablishment details
+                            listing.YearOfEstablishment = await GetYearOfEstablishment(listingId);
+
+                            // Fetch ratings
+                            var (RatingCount, RatingAverage) = await GetRating(listingId);
+                            listing.RatingCount = RatingCount;
+                            listing.RatingAverage = RatingAverage;
+
+                            // Fetch communication details
+                            var (Telephone, Whatsapp, Mobile, Email, Website, Languges, TollFree, RegisterNumber) = await Getcommunication(listingId);
+                            listing.Telephone = Telephone;
+                            listing.Whatsapp = Whatsapp;
+                            listing.Mobile = Mobile;
+                            listing.Email = Email;
+                            listing.Website = Website;
+                            listing.Languges = Languges;
+                            listing.TollFree = TollFree;
+                            listing.RegisterMobile = RegisterNumber;
+
+                            // Fetch address details
+                            var (City, Locality, Area, pincode, state, country, FullAddress) = await GetAddress(listingId);
+                            listing.City = City;
+                            listing.Locality = Locality;
+                            listing.Area = Area;
+                            listing.FullAddress = FullAddress;
+
+
+                            // Fetch Review Details
+                            listing.Reviews = await GetReviews(listingId);
+ 
                             listings.Add(listing);
                         }
                     }

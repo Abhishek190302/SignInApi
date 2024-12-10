@@ -23,7 +23,7 @@ namespace SignInApi.Controllers
 
         [HttpGet] 
         [Route("GetCategoriesListing")]
-        public async Task<IActionResult> GetCategoriesListing(int pageNumber = 1, int pageSize = 10 ,int subCategoryid = 94, string cityName = null)
+        public async Task<IActionResult> GetCategoriesListing(int pageNumber = 1, int pageSize = 10 , int? subCategoryid = null, string cityName = null)
         {   
             try
             {
@@ -46,6 +46,23 @@ namespace SignInApi.Controllers
             try
             {
                 var listings = await _listingService.GetListingsid(subCategoryid, cityName, Keywords);
+                return Ok(listings);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while getting categories listing");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet]
+        [Route("GetCategoriesListingByKeywordLocation")]
+        public async Task<IActionResult> GetCategoriesListingByKeywordLocation(int pageNumber = 1, int pageSize = 10 , string cityName = null, string Keywords = null)
+        {
+            try
+            {
+                var listings = await _listingService.GetListingsKeywordlocation(pageNumber, pageSize , cityName, Keywords);
                 return Ok(listings);
 
             }

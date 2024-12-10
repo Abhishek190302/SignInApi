@@ -836,5 +836,39 @@ namespace SignInApi.Models
                 return null;
             }
         }
+
+        public async Task<SavePincodesModel> GetWorkingAreaByListingIdAsync(int listingId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("SELECT * FROM [dbo].[WorkingArea] WHERE ListingID = @ListingID", conn);
+                cmd.Parameters.AddWithValue("@ListingID", listingId);
+                await conn.OpenAsync();
+                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+                    var pincodes = row.Field<string>("PincodeID") ?? string.Empty;
+                    List<int> selectedPincodes = pincodes
+                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries) // Split by comma
+                        .Select(p => int.TryParse(p, out int value) ? value : 0) // Parse to int
+                        .Where(p => p > 0)
+                        .ToList();
+
+                    return new SavePincodesModel
+                    {
+                        ListingID = row.Field<int?>("ListingID") ?? 0,                    
+                        CountryID = row.Field<int?>("CountryID") ?? 0,
+                        StateID = row.Field<int?>("StateID") ?? 0,
+                        CityID = row.Field<int?>("CityID") ?? 0,
+                        AssemblyID = row.Field<int?>("AssemblyID") ?? 0,
+                        SelectedPincodesContainer = selectedPincodes,
+                    };
+                }
+                return null;
+            }
+        }
     }
 }

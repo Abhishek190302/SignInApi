@@ -26,6 +26,7 @@ namespace SignInApi.Controllers
         [Route("AddSuggestion")]
         public async Task<IActionResult> AddSuggestion(SuggestionRequest request)
         {
+
             if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Suggestion))
             {
                 return BadRequest("All fields are compulsory.");

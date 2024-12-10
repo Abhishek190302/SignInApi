@@ -15,6 +15,7 @@
         public string YearOfEstablishment { get; set; }
         public string NumberOfEmployees { get; set; }
         public string GSTNumber { get; set; }
+        public int PackageID { get; set; }
         public string Languges { get; set; }
         public string TollFree { get; set; }
         public string FullAddress { get; set; }

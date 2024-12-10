@@ -678,5 +678,51 @@ namespace SignInApi.Controllers
             }
             return Unauthorized();
         }
+
+        [HttpGet]
+        [Route("GetWorkingAreaDetailslisting")]
+        public async Task<IActionResult> GetWorkingAreaDetailslisting()
+        {
+            var user = _httpContextAccessor.HttpContext.User;
+            if (user.Identity.IsAuthenticated)
+            {
+                var userName = user.Identity.Name;
+
+                var applicationUser = await _userService.GetUserByUserName(userName);
+                if (applicationUser != null)
+                {
+                    try
+                    {
+                        string currentUserGuid = applicationUser.Id.ToString();
+                        var workingdetailsdetails = await _binddetailsListing.GetListingByOwnerIdAsync(currentUserGuid);
+                        if (workingdetailsdetails != null)
+                        {
+                            var workingarea = await _binddetailsListing.GetWorkingAreaByListingIdAsync(workingdetailsdetails.Listingid);
+                            return Ok(workingarea);
+                        }
+                        else
+                        {
+                            var phoneNumber = applicationUser.PhoneNumber;
+                            dynamic listingId = await _binddetailsListing.GetListingIdByPhoneNumberAsync(phoneNumber);
+                            if (listingId != null)
+                            {
+                                var workingarea = await _binddetailsListing.GetWorkingAreaByListingIdAsync(listingId);
+                                return Ok(workingarea);
+                            }
+                            else
+                            {
+                                return NotFound("No listing found for the user's phone number");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, "Internal server error");
+                    }
+                }
+                return NotFound("User not found");
+            }
+            return Unauthorized();
+        }
     }
 }
