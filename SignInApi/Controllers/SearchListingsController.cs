@@ -92,7 +92,7 @@ namespace SignInApi.Controllers
                 if (!string.IsNullOrEmpty(location))
                 {
                     // Use the SQL join query to search for listings based on keyword and location
-                    listings = await SearchByKeywordAndLocation(keyword, location);
+                    listings = await SearchByKeywordAndLocation(keyword, location,specialization);
                 }
                 else
                 {
@@ -210,7 +210,9 @@ namespace SignInApi.Controllers
                     Gstnumber = listing.Gstnumber,
                     Ownername = listing.Ownername,
                     Specialization = listing.Specialiazation,
-                    OwnerPrefix = listing.OwnerPrefix
+                    OwnerPrefix = listing.OwnerPrefix,
+                    OwnerLastname = listing.OwnerLastname,
+                    allspecialiazationkeyword = listing.allspecialiazationkeyword
                 });
             }
 
@@ -233,7 +235,8 @@ namespace SignInApi.Controllers
                     Mobilenumber = null,
                     Gstnumber = null,
                     Ownername = null,
-                    Specialization = null
+                    Specialization = null,
+                    allspecialiazationkeyword = null
                 });
             }
 
@@ -257,12 +260,42 @@ namespace SignInApi.Controllers
                     item.Mobilenumber,
                     item.Gstnumber,
                     item.Specialization,
-                    item.OwnerPrefix
+                    item.OwnerPrefix,
+                    item.OwnerLastname
                 }).ToList(),
                 ListingsCount = group.Count() // Total listings count for sorting
             })
             .OrderByDescending(x => x.ListingsCount) // Sort by number of listings in descending order
             .ThenBy(x => x.Ownername) // Secondary sort alphabetically by Ownername
+            .ToList();
+
+            var AllSearchkeywordMatched = result
+            .Where(x => !string.IsNullOrEmpty(x.allspecialiazationkeyword)
+                        && x.allspecialiazationkeyword.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(x => x.allspecialiazationkeyword.Trim()) // Trim to avoid grouping mismatches
+            .Select(group => new
+            {
+                Allspecialiazationkeyword = group.Key,
+                Listings = group.Select(item => new
+                {
+                    item.listingId,
+                    item.CompanyName,
+                    item.ListingUrl,
+                    item.CityName,
+                    item.LocalityName,
+                    item.AreaName,
+                    item.category,
+                    item.CategoryId,
+                    item.Mobilenumber,
+                    item.Gstnumber,
+                    item.Specialization,
+                    item.OwnerPrefix
+                }).ToList(),
+                ListingsCount = group.Count()
+            })
+            .Where(x => !string.IsNullOrEmpty(x.Allspecialiazationkeyword)) // Ensure valid group keys
+            .OrderByDescending(x => x.ListingsCount)
+            .ThenBy(x => x.Allspecialiazationkeyword)
             .ToList();
 
             var keywordMatched = result
@@ -292,8 +325,7 @@ namespace SignInApi.Controllers
                listings = group.Select(item => item.Listings).ToList(),
                listingsCount = group.Count()
            })
-            .OrderByDescending(x => x.listingsCount) // Listings count ke basis par descending order
-            .ToList();
+           .ToList();
 
             var specializationMatched = result
             .Where(x => x.Specialization != null && x.Specialization.Contains(searchText, StringComparison.OrdinalIgnoreCase))
@@ -322,7 +354,6 @@ namespace SignInApi.Controllers
                 listings = group.Select(item => item.Listing).ToList(),
                 listingsCount = group.Count()
             })
-            .OrderByDescending(x => x.listingsCount) // Listings count ke basis par descending order
             .ToList();
 
 
@@ -337,6 +368,7 @@ namespace SignInApi.Controllers
                 MatchedCategory = firstObject.Any() ? firstObject.First() : null,
                 Keywords = keywordMatched, // Grouped by keyword
                 SpecializationMatches = specializationMatched,
+                AllspecializationandKeyword = AllSearchkeywordMatched,
                 OwnernameMatches = ownerNameMatched,
                 CompanyNameMatches = companyNameMatched.Select(item => new
                 {
@@ -351,53 +383,55 @@ namespace SignInApi.Controllers
                     item.Mobilenumber,
                     item.Gstnumber,
                     item.Ownername,
-                    item.Specialization
+                    item.Specialization,
+                    item.allspecialiazationkeyword
                 }).ToList()
             };
 
 
             // Check if the response contains any data
             bool hasData = sortedResponse.MatchedCategory != null
-                           || sortedResponse.Keywords.Any()
-                           || sortedResponse.CompanyNameMatches.Any()
-                           || sortedResponse.SpecializationMatches.Any()
-                           || sortedResponse.OwnernameMatches.Any();
-                          
+                || sortedResponse.Keywords.Any()
+                || sortedResponse.CompanyNameMatches.Any()
+                || sortedResponse.SpecializationMatches.Any()
+                || sortedResponse.OwnernameMatches.Any()
+                || sortedResponse.AllspecializationandKeyword.Any();
+
             if (!hasData)
                 return Ok(result);
 
             return Ok(sortedResponse);
         }
-
+         
         private async Task<List<ListingSearch>> SearchByKeywordAndLocation(string keyword, string location, string specialization = null)
         {
-            var results = new List<ListingSearch>();
-            string query = @"
-                SELECT l.ListingID, l.CompanyName, l.ListingURL, c.Name as City, loc.Name as Locality, 
-                k.KeywordID, k.SeoKeyword, a.AssemblyID
-                FROM [dbo].[Keyword] k
-                INNER JOIN [listing].[Address] a ON k.ListingID = a.ListingID
-                INNER JOIN [listing].[Listing] l ON a.ListingID = l.ListingID
-                INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-                INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-                WHERE k.SeoKeyword LIKE '%' + @Keyword + '%'
-                AND (c.Name LIKE '%' + @Location + '%' OR loc.Name LIKE '%' + @Location + '%')
-                AND (@Specialization IS NULL OR (@Specialization = 'Banks' AND s.Banks = 1) OR (@Specialization = 'BeautyParlors' AND s.BeautyParlors = 1) OR (@Specialization = 'Bungalow' AND s.Bungalow = 1) OR (@Specialization = 'CallCenter' AND s.CallCenter = 1) OR (@Specialization = 'Church' AND s.Church = 1) OR (@Specialization = 'Company' AND s.Company = 1) OR (@Specialization = 'ComputerInstitute' AND s.ComputerInstitute = 1) OR (@Specialization = 'Dispensary' AND s.Dispensary = 1) OR (@Specialization = 'ExhibitionStall' AND s.ExhibitionStall = 1) OR (@Specialization = 'Factory' AND s.Factory = 1) OR (@Specialization = 'Farmhouse' AND s.Farmhouse = 1) OR (@Specialization = 'Gurudwara' AND s.Gurudwara = 1) OR (@Specialization = 'Gym' AND s.Gym = 1) OR (@Specialization = 'HealthClub' AND s.HealthClub = 1) OR (@Specialization = 'Home' AND s.Home = 1) OR (@Specialization = 'Hospital' AND s.Hospital = 1) OR (@Specialization = 'Hotel' AND s.Hotel = 1) OR (@Specialization = 'Laboratory' AND s.Laboratory = 1) OR (@Specialization = 'Mandir' AND s.Mandir = 1) OR (@Specialization = 'Mosque' AND s.Mosque = 1) OR (@Specialization = 'Office' AND s.Office = 1) OR (@Specialization = 'Plazas' AND s.Plazas = 1) OR (@Specialization = 'ResidentialSociety' AND s.ResidentialSociety = 1) OR (@Specialization = 'Resorts' AND s.Resorts = 1) OR (@Specialization = 'Restaurants' AND s.Restaurants = 1) OR (@Specialization = 'Salons' AND s.Salons = 1) OR (@Specialization = 'Shop' AND s.Shop = 1) OR (@Specialization = 'ShoppingMall' AND s.ShoppingMall = 1) OR (@Specialization = 'Showroom' AND s.Showroom = 1) OR (@Specialization = 'Warehouse' AND s.Warehouse = 1) OR (@Specialization = 'AcceptTenderWork' AND s.AcceptTenderWork = 1));";
-
-
+            var listing = new List<ListingSearch>();
             //string query = @"
             //    SELECT l.ListingID, l.CompanyName, l.ListingURL, c.Name as City, loc.Name as Locality, 
             //    k.KeywordID, k.SeoKeyword, a.AssemblyID
             //    FROM [dbo].[Keyword] k
             //    INNER JOIN [listing].[Address] a ON k.ListingID = a.ListingID
             //    INNER JOIN [listing].[Listing] l ON a.ListingID = l.ListingID
-            //    INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-            //    INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+            //    INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
+            //    INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
             //    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
             //    WHERE k.SeoKeyword LIKE '%' + @Keyword + '%'
             //    AND (c.Name LIKE '%' + @Location + '%' OR loc.Name LIKE '%' + @Location + '%')
             //    AND (@Specialization IS NULL OR (@Specialization = 'Banks' AND s.Banks = 1) OR (@Specialization = 'BeautyParlors' AND s.BeautyParlors = 1) OR (@Specialization = 'Bungalow' AND s.Bungalow = 1) OR (@Specialization = 'CallCenter' AND s.CallCenter = 1) OR (@Specialization = 'Church' AND s.Church = 1) OR (@Specialization = 'Company' AND s.Company = 1) OR (@Specialization = 'ComputerInstitute' AND s.ComputerInstitute = 1) OR (@Specialization = 'Dispensary' AND s.Dispensary = 1) OR (@Specialization = 'ExhibitionStall' AND s.ExhibitionStall = 1) OR (@Specialization = 'Factory' AND s.Factory = 1) OR (@Specialization = 'Farmhouse' AND s.Farmhouse = 1) OR (@Specialization = 'Gurudwara' AND s.Gurudwara = 1) OR (@Specialization = 'Gym' AND s.Gym = 1) OR (@Specialization = 'HealthClub' AND s.HealthClub = 1) OR (@Specialization = 'Home' AND s.Home = 1) OR (@Specialization = 'Hospital' AND s.Hospital = 1) OR (@Specialization = 'Hotel' AND s.Hotel = 1) OR (@Specialization = 'Laboratory' AND s.Laboratory = 1) OR (@Specialization = 'Mandir' AND s.Mandir = 1) OR (@Specialization = 'Mosque' AND s.Mosque = 1) OR (@Specialization = 'Office' AND s.Office = 1) OR (@Specialization = 'Plazas' AND s.Plazas = 1) OR (@Specialization = 'ResidentialSociety' AND s.ResidentialSociety = 1) OR (@Specialization = 'Resorts' AND s.Resorts = 1) OR (@Specialization = 'Restaurants' AND s.Restaurants = 1) OR (@Specialization = 'Salons' AND s.Salons = 1) OR (@Specialization = 'Shop' AND s.Shop = 1) OR (@Specialization = 'ShoppingMall' AND s.ShoppingMall = 1) OR (@Specialization = 'Showroom' AND s.Showroom = 1) OR (@Specialization = 'Warehouse' AND s.Warehouse = 1) OR (@Specialization = 'AcceptTenderWork' AND s.AcceptTenderWork = 1));";
+
+
+            string query = @"
+                SELECT l.ListingID, l.CompanyName, l.ListingURL, c.Name as City, loc.Name as Locality, 
+                k.KeywordID, k.SeoKeyword, a.AssemblyID
+                FROM [dbo].[Keyword] k
+                INNER JOIN [listing].[Address] a ON k.ListingID = a.ListingID
+                INNER JOIN [listing].[Listing] l ON a.ListingID = l.ListingID
+                INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
+                INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                WHERE k.SeoKeyword LIKE '%' + @Keyword + '%'
+                AND (c.Name LIKE '%' + @Location + '%' OR loc.Name LIKE '%' + @Location + '%')
+                AND (@Specialization IS NULL OR (@Specialization = 'Banks' AND s.Banks = 1) OR (@Specialization = 'BeautyParlors' AND s.BeautyParlors = 1) OR (@Specialization = 'Bungalow' AND s.Bungalow = 1) OR (@Specialization = 'CallCenter' AND s.CallCenter = 1) OR (@Specialization = 'Church' AND s.Church = 1) OR (@Specialization = 'Company' AND s.Company = 1) OR (@Specialization = 'ComputerInstitute' AND s.ComputerInstitute = 1) OR (@Specialization = 'Dispensary' AND s.Dispensary = 1) OR (@Specialization = 'ExhibitionStall' AND s.ExhibitionStall = 1) OR (@Specialization = 'Factory' AND s.Factory = 1) OR (@Specialization = 'Farmhouse' AND s.Farmhouse = 1) OR (@Specialization = 'Gurudwara' AND s.Gurudwara = 1) OR (@Specialization = 'Gym' AND s.Gym = 1) OR (@Specialization = 'HealthClub' AND s.HealthClub = 1) OR (@Specialization = 'Home' AND s.Home = 1) OR (@Specialization = 'Hospital' AND s.Hospital = 1) OR (@Specialization = 'Hotel' AND s.Hotel = 1) OR (@Specialization = 'Laboratory' AND s.Laboratory = 1) OR (@Specialization = 'Mandir' AND s.Mandir = 1) OR (@Specialization = 'Mosque' AND s.Mosque = 1) OR (@Specialization = 'Office' AND s.Office = 1) OR (@Specialization = 'Plazas' AND s.Plazas = 1) OR (@Specialization = 'ResidentialSociety' AND s.ResidentialSociety = 1) OR (@Specialization = 'Resorts' AND s.Resorts = 1) OR (@Specialization = 'Restaurants' AND s.Restaurants = 1) OR (@Specialization = 'Salons' AND s.Salons = 1) OR (@Specialization = 'Shop' AND s.Shop = 1) OR (@Specialization = 'ShoppingMall' AND s.ShoppingMall = 1) OR (@Specialization = 'Showroom' AND s.Showroom = 1) OR (@Specialization = 'Warehouse' AND s.Warehouse = 1) OR (@Specialization = 'AcceptTenderWork' AND s.AcceptTenderWork = 1));";
 
 
             string connectionString = _configuration.GetConnectionString("MimListing");
@@ -417,7 +451,7 @@ namespace SignInApi.Controllers
 
                         foreach (DataRow row in dataTable.Rows)
                         {
-                            results.Add(new ListingSearch
+                            listing.Add(new ListingSearch
                             {
                                 ListingId = row["ListingID"].ToString(),
                                 CompanyName = row["CompanyName"].ToString(),
@@ -425,7 +459,7 @@ namespace SignInApi.Controllers
                                 City = row["City"].ToString(),
                                 Locality = row["Locality"].ToString(),
                                 KeywordID = Convert.ToInt32(row["KeywordID"]),
-                                Keyword = row["SeoKeyword"].ToString(),
+                                allspecialiazationkeyword = $"{specialization} {keyword} in {location}",
                                 Address = new AddressSearch
                                 {
                                     AssemblyID = row["AssemblyID"].ToString()
@@ -436,8 +470,9 @@ namespace SignInApi.Controllers
                 }
             }
 
-            return results;
+            return listing;
         }
+
 
         private async Task<List<ListingSearch>> GetListingsByKeyword(string keyword)
         {
@@ -447,83 +482,125 @@ namespace SignInApi.Controllers
                 string connectionString = _configuration.GetConnectionString("MimListing");
                 using (var connection = new SqlConnection(connectionString))
                 {
-                    string query = @"SELECT k.SeoKeyword, c.Name AS CityName, loc.Name AS LocationName, ar.Name AS AreaName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
+                    await connection.OpenAsync();
+
+                    //string Cityquery = @"SELECT TOP 3 k.SeoKeyword, c.Name AS CityName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
+                    //    FROM [dbo].[Keyword] k
+                    //    LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    //    INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
+                    //    LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
+                    //    WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
+
+                    //string Localityquery = @"SELECT TOP 3 k.SeoKeyword, loc.Name AS LocationName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
+                    //    FROM [dbo].[Keyword] k
+                    //    LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    //    INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                    //    LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
+                    //    WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
+
+                    //string Areaquery = @"SELECT TOP 3 k.SeoKeyword, ar.Name AS AreaName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
+                    //    FROM [dbo].[Keyword] k
+                    //    LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    //    INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
+                    //    LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
+                    //    WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
+
+
+                    /// Server Query 
+                    string Cityquery = @"SELECT TOP 3 k.SeoKeyword, c.Name AS CityName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
                         FROM [dbo].[Keyword] k
                         LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-                        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-                        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
+                        INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
                         LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
                         WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
 
-                    //string query = @"SELECT k.SeoKeyword, c.Name AS CityName, loc.Name AS LocationName, ar.Name AS AreaName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
-                    //        FROM [dbo].[Keyword] k
-                    //        LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-                    //        INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-                    //        INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                    //        INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
-                    //        LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
-                    //        WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
+                    string Localityquery = @"SELECT TOP 3 k.SeoKeyword, loc.Name AS LocationName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
+                        FROM [dbo].[Keyword] k
+                        LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                        INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                        LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
+                        WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
 
-                    using (var command = new SqlCommand(query, connection))
+                    string Areaquery = @"SELECT TOP 3 k.SeoKeyword, ar.Name AS AreaName, lst.ListingID, lst.CompanyName, lst.ListingURL, a.AssemblyID
+                        FROM [dbo].[Keyword] k
+                        LEFT JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                        INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
+                        LEFT JOIN [listing].[Listing] lst ON a.ListingId = lst.ListingId
+                        WHERE k.SeoKeyword LIKE '%' + @Keyword + '%' ORDER BY k.SeoKeyword";
+
+
+                    async Task ExecuteQuery(string query, Action<SqlDataReader> processReader)
                     {
-                        command.Parameters.Add(new SqlParameter("@Keyword", SqlDbType.NVarChar) { Value = keyword });
-
-                        connection.Open();
-                        using (var reader = await command.ExecuteReaderAsync())
+                        using (var command = new SqlCommand(query, connection))
                         {
-                            while (await reader.ReadAsync())
+                            command.Parameters.AddWithValue("@Keyword", $"%{keyword}%");
+
+                            using (var reader = await command.ExecuteReaderAsync())
                             {
-                                string seoKeyword = reader["SeoKeyword"].ToString();
-                                string cityName = reader["CityName"].ToString();
-                                string locationName = reader["LocationName"].ToString();
-                                string areaName = reader["AreaName"].ToString();
-
-                                // List banakar sab possible keywords add karenge
-                                var keywordsList = new List<string>
+                                while (await reader.ReadAsync())
                                 {
-                                    seoKeyword // Default keyword
-                                };
-
-                                if (!string.IsNullOrEmpty(cityName))
-                                    keywordsList.Add($"{seoKeyword} in {cityName}");
-                                if (!string.IsNullOrEmpty(locationName))
-                                    keywordsList.Add($"{seoKeyword} in {locationName}");
-                                if (!string.IsNullOrEmpty(areaName))
-                                    keywordsList.Add($"{seoKeyword} in {areaName}");
-
-
-                                var listing = new ListingSearch
-                                {
-                                    ListingId = reader["ListingID"].ToString(),
-                                    CompanyName = reader["CompanyName"].ToString(),
-                                    ListingURL = reader["ListingURL"].ToString(),
-                                    Keyword = string.Join("\n ", keywordsList), // Sab keywords ko combine karenge
-                                    City = cityName,
-                                    Locality = locationName,
-                                    Area = areaName,
-                                    Address = new AddressSearch
-                                    {
-                                        AssemblyID = reader["AssemblyID"].ToString()
-                                    }
-                                };
-
-                                listings.Add(listing);
+                                    processReader(reader);
+                                }
                             }
                         }
                     }
+
+                    await ExecuteQuery(Cityquery, reader =>
+                    {
+                        listings.Add(new ListingSearch
+                        {
+                            City = reader["CityName"]?.ToString(),
+                            Keyword = $"{reader["SeoKeyword"]} in {reader["CityName"]}",
+                            CompanyName = reader["CompanyName"]?.ToString(),
+                            ListingURL = reader["ListingURL"]?.ToString(),
+                            ListingId = reader["ListingID"]?.ToString(),
+                            Address = new AddressSearch
+                            {
+                                AssemblyID = reader["AssemblyID"]?.ToString()
+                            }
+                        }); ;
+                    });
+
+                    await ExecuteQuery(Localityquery, reader =>
+                    {
+                        listings.Add(new ListingSearch
+                        {
+                            Locality = reader["LocationName"]?.ToString(),
+                            Keyword = $"{reader["SeoKeyword"]} in {reader["LocationName"]}",
+                            CompanyName = reader["CompanyName"]?.ToString(),
+                            ListingURL = reader["ListingURL"]?.ToString(),
+                            ListingId = reader["ListingID"]?.ToString(),
+                            Address = new AddressSearch
+                            {
+                                AssemblyID = reader["AssemblyID"]?.ToString()
+                            }
+                        }); ;
+                    });
+
+                    await ExecuteQuery(Areaquery, reader =>
+                    {
+                        listings.Add(new ListingSearch
+                        {
+                            Locality = reader["AreaName"]?.ToString(),
+                            Keyword = $"{reader["SeoKeyword"]} in {reader["AreaName"]}",
+                            CompanyName = reader["CompanyName"]?.ToString(),
+                            ListingURL = reader["ListingURL"]?.ToString(),
+                            ListingId = reader["ListingID"]?.ToString(),
+                            Address = new AddressSearch
+                            {
+                                AssemblyID = reader["AssemblyID"]?.ToString()
+                            }
+                        }); ;
+                    });
                 }
 
                 return listings;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw;
             }
-
-            
         }
-
 
         private async Task<List<ListingSearch>> GetKeywordSuggestionsBySpecialization(string searchText)
         {
@@ -654,239 +731,13 @@ namespace SignInApi.Controllers
                 throw; // Preserve stack trace for further analysis
             }
         }
-
-        //private async Task<List<ListingSearch>> GetLocationSuggestionsBySpecializationAndKeyword(string searchText)
-        //{
-        //    try
-        //    {
-        //        // Predefined specialization names ki list
-        //        var specializations = new List<string>
-        //{
-        //    "Banks", "Beauty Parlors", "Bungalow", "Call Center", "Church", "Company", "Computer Institute",
-        //    "Dispensary", "Exhibition Stall", "Factory", "Farmhouse", "Gurudwara", "Gym", "Health Club", "Home",
-        //    "Hospital", "Hotel", "Laboratory", "Mandir", "Mosque", "Office", "Plazas", "Residential Society",
-        //    "Resorts", "Restaurants", "Salons", "Shop", "Shopping Mall", "Showroom", "Warehouse", "Accept Tender Work"
-        //};
-
-        //        // Split specialization name aur keyword ko searchText se
-        //        string specializationName = string.Empty;
-        //        string keyword = string.Empty;
-
-        //        foreach (var specialization in specializations)
-        //        {
-        //            if (searchText.StartsWith(specialization, StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                specializationName = specialization;
-        //                keyword = searchText.Substring(specialization.Length).Trim();
-        //                break;
-        //            }
-        //        }
-
-        //        // Agar specialization na mile, toh empty list return karo
-        //        if (string.IsNullOrEmpty(keyword))
-        //        {
-        //            return new List<ListingSearch>();
-        //        }
-
-        //        var listings = new List<ListingSearch>();
-        //        string connectionString = _configuration.GetConnectionString("MimListing");
-
-        //        // Sanitize specialization column name
-        //        string specializationColumn = specializationName.Replace(" ", ""); // Space hata do column names se
-
-        //        using (var connection = new SqlConnection(connectionString))
-        //        {
-        //            await connection.OpenAsync();
-
-        //            // Check karo agar column Specialisation table mein exist karta hai
-        //            string checkColumnQuery = @"
-        //    SELECT 1 
-        //    FROM INFORMATION_SCHEMA.COLUMNS
-        //    WHERE TABLE_SCHEMA = 'listing' 
-        //    AND TABLE_NAME = 'Specialisation'
-        //    AND COLUMN_NAME = @ColumnName";
-
-        //            bool columnExists;
-        //            using (var checkCommand = new SqlCommand(checkColumnQuery, connection))
-        //            {
-        //                checkCommand.Parameters.AddWithValue("@ColumnName", specializationColumn);
-        //                columnExists = (await checkCommand.ExecuteScalarAsync()) != null;
-        //            }
-
-        //            string query;
-        //            if (!string.IsNullOrEmpty(keyword))
-        //            {
-        //                query = $@"
-        //        SELECT DISTINCT 
-        //        c.Name AS CityName,
-        //        loc.Name AS LocationName,
-        //        ar.Name AS AreaName,
-        //        k.SeoKeyword,
-        //        l.CompanyName,
-        //        l.ListingURL,
-        //        l.ListingID,
-        //        a.AssemblyID,
-        //        s.* 
-        //        FROM [dbo].[Keyword] k
-        //        INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-        //        INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-        //        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-        //        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-        //        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
-        //        INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-        //        WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword;";
-        //            }
-        //            else
-        //            {
-        //                query = @"
-        //        SELECT DISTINCT 
-        //        c.Name AS CityName,
-        //        loc.Name AS LocationName,
-        //        ar.Name AS AreaName,
-        //        k.SeoKeyword,
-        //        l.CompanyName,
-        //        l.ListingURL,
-        //        l.ListingID,
-        //        a.AssemblyID,
-        //        NULL AS SpecializationValue
-        //        FROM [dbo].[Keyword] k
-        //        INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-        //        INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-        //        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-        //        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-        //        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
-        //        INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-        //        WHERE k.SeoKeyword LIKE @Keyword;";
-        //            }
-
-        //            // Query execute karo aur result process karo
-        //            using (var command = new SqlCommand(query, connection))
-        //            {
-        //                command.Parameters.AddWithValue("@Keyword", $"%{keyword}%");
-
-        //                using (var reader = await command.ExecuteReaderAsync())
-        //                {
-        //                    // Grouping based on City, Location, and Area
-        //                    var citySuggestions = new Dictionary<string, List<string>>();
-        //                    var localitySuggestions = new Dictionary<string, List<string>>();
-        //                    var areaSuggestions = new Dictionary<string, List<string>>();
-
-        //                    while (await reader.ReadAsync())
-        //                    {
-        //                        // City, Location, Area names ko check karke group karo
-        //                        string cityName = reader["CityName"]?.ToString();
-        //                        string locationName = reader["LocationName"]?.ToString();
-        //                        string areaName = reader["AreaName"]?.ToString();
-        //                        string seoKeyword = reader["SeoKeyword"]?.ToString();
-
-        //                        // City suggestions add karo
-        //                        if (!string.IsNullOrEmpty(cityName))
-        //                        {
-        //                            if (!citySuggestions.ContainsKey(cityName))
-        //                                citySuggestions[cityName] = new List<string>();
-
-        //                            citySuggestions[cityName].Add($"{specializationName} {seoKeyword} in {cityName}");
-        //                        }
-
-        //                        // Location suggestions add karo
-        //                        if (!string.IsNullOrEmpty(locationName))
-        //                        {
-        //                            if (!localitySuggestions.ContainsKey(locationName))
-        //                                localitySuggestions[locationName] = new List<string>();
-
-        //                            localitySuggestions[locationName].Add($"{specializationName} {seoKeyword} in {locationName}");
-        //                        }
-
-        //                        // Area suggestions add karo
-        //                        if (!string.IsNullOrEmpty(areaName))
-        //                        {
-        //                            if (!areaSuggestions.ContainsKey(areaName))
-        //                                areaSuggestions[areaName] = new List<string>();
-
-        //                            areaSuggestions[areaName].Add($"{specializationName} {seoKeyword} in {areaName}");
-        //                        }
-
-        //                        foreach (var cityGroup in citySuggestions)
-        //                        {
-        //                            listings.Add(new ListingSearch
-        //                            {
-        //                                ListingId = reader["ListingID"]?.ToString(),
-        //                                CompanyName = reader["CompanyName"]?.ToString(),
-        //                                ListingURL = reader["ListingURL"]?.ToString(),
-        //                                Keyword = reader["SeoKeyword"]?.ToString(),
-        //                                City = reader["CityName"]?.ToString(),
-        //                                Locality = reader["LocationName"]?.ToString(),
-        //                                Area = reader["AreaName"]?.ToString(),
-        //                                Address = new AddressSearch
-        //                                {
-        //                                    AssemblyID = reader["AssemblyID"]?.ToString()
-        //                                },
-        //                                Specialiazation = string.Join("\n", cityGroup.Value)
-        //                            });
-        //                        }
-
-        //                        foreach (var localityGroup in localitySuggestions)
-        //                        {
-        //                            listings.Add(new ListingSearch
-        //                            {
-        //                                ListingId = reader["ListingID"]?.ToString(),
-        //                                CompanyName = reader["CompanyName"]?.ToString(),
-        //                                ListingURL = reader["ListingURL"]?.ToString(),
-        //                                Keyword = reader["SeoKeyword"]?.ToString(),
-        //                                City = reader["CityName"]?.ToString(),
-        //                                Locality = reader["LocationName"]?.ToString(),
-        //                                Area = reader["AreaName"]?.ToString(),
-        //                                Address = new AddressSearch
-        //                                {
-        //                                    AssemblyID = reader["AssemblyID"]?.ToString()
-        //                                },
-        //                                Specialiazation = string.Join("\n", localityGroup.Value)
-        //                            });
-        //                        }
-
-        //                        foreach (var areaGroup in areaSuggestions)
-        //                        {
-        //                            listings.Add(new ListingSearch
-        //                            {
-        //                                ListingId = reader["ListingID"]?.ToString(),
-        //                                CompanyName = reader["CompanyName"]?.ToString(),
-        //                                ListingURL = reader["ListingURL"]?.ToString(),
-        //                                Keyword = reader["SeoKeyword"]?.ToString(),
-        //                                City = reader["CityName"]?.ToString(),
-        //                                Locality = reader["LocationName"]?.ToString(),
-        //                                Area = reader["AreaName"]?.ToString(),
-        //                                Address = new AddressSearch
-        //                                {
-        //                                    AssemblyID = reader["AssemblyID"]?.ToString()
-        //                                },
-        //                                Specialiazation = string.Join("\n", areaGroup.Value)
-        //                            });
-        //                        }
-        //                    }
-
-        //                    // Now, combine the results into the desired format
-
-        //                }
-        //            }
-        //        }
-
-        //        return listings;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Exception log karo (optional: logger use kar sakte ho)
-        //        Console.WriteLine($"Error in GetLocationSuggestionsBySpecializationAndKeyword: {ex.Message}");
-        //        throw; // Stack trace preserve karne ke liye
-        //    }
-        //}
-
-
+        
 
         private async Task<List<ListingSearch>> GetLocationSuggestionsBySpecializationAndKeyword(string searchText)
         {
             try
             {
-                // Predefined specialization names ki list
+                // Predefined list of specialization names
                 var specializations = new List<string>
                 {
                     "Banks", "Beauty Parlors", "Bungalow", "Call Center", "Church", "Company", "Computer Institute",
@@ -895,7 +746,7 @@ namespace SignInApi.Controllers
                     "Resorts", "Restaurants", "Salons", "Shop", "Shopping Mall", "Showroom", "Warehouse", "Accept Tender Work"
                 };
 
-                // Split specialization name aur keyword ko searchText se
+                // Extract specialization and keyword from searchText
                 string specializationName = string.Empty;
                 string keyword = string.Empty;
 
@@ -909,23 +760,23 @@ namespace SignInApi.Controllers
                     }
                 }
 
-                // Agar specialization na mile, toh empty list return karo
+                // Return an empty list if no keyword is found
                 if (string.IsNullOrEmpty(keyword))
                 {
                     return new List<ListingSearch>();
                 }
 
-                var listings = new List<ListingSearch>();
+                var allListings = new List<ListingSearch>();
                 string connectionString = _configuration.GetConnectionString("MimListing");
 
-                // Sanitize specialization column name
-                string specializationColumn = specializationName.Replace(" ", ""); // Space hata do column names se
+                // Sanitize the specialization column name
+                string specializationColumn = specializationName.Replace(" ", "");
 
                 using (var connection = new SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
 
-                    // Check karo agar column Specialisation table mein exist karta hai
+                    // Check if the column exists in the Specialisation table
                     string checkColumnQuery = @"
                     SELECT 1 
                     FROM INFORMATION_SCHEMA.COLUMNS
@@ -940,360 +791,148 @@ namespace SignInApi.Controllers
                         columnExists = (await checkCommand.ExecuteScalarAsync()) != null;
                     }
 
-                    string query;
-                    if (!string.IsNullOrEmpty(keyword))
+                    if (!columnExists)
                     {
-                        query = $@"
-                        SELECT DISTINCT 
-                        c.Name AS CityName,
-                        loc.Name AS LocationName,
-                        ar.Name AS AreaName,
-                        k.SeoKeyword,
-                        l.CompanyName,
-                        l.ListingURL,
-                        l.ListingID,
-                        a.AssemblyID,
-                        s.* 
-                        FROM [dbo].[Keyword] k
-                        INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-                        INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-                        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-                        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
-                        INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-                        WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword;";
-                    }
-                    else
-                    {
-                        query = @"
-                        SELECT DISTINCT 
-                        c.Name AS CityName,
-                        loc.Name AS LocationName,
-                        ar.Name AS AreaName,
-                        k.SeoKeyword,
-                        l.CompanyName,
-                        l.ListingURL,
-                        l.ListingID,
-                        a.AssemblyID,
-                        NULL AS SpecializationValue
-                        FROM [dbo].[Keyword] k
-                        INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-                        INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-                        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-                        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
-                        INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-                        WHERE k.SeoKeyword LIKE @Keyword;";
+                        return new List<ListingSearch>();
                     }
 
-                    //string query;
-                    //if (!string.IsNullOrEmpty(keyword))
-                    //{
-                    //    query = $@"
-                    //    SELECT DISTINCT 
-                    //    c.Name AS CityName,
-                    //    loc.Name AS LocationName,
-                    //    ar.Name AS AreaName,
-                    //    k.SeoKeyword,
-                    //    l.CompanyName,
-                    //    l.ListingURL,
-                    //    l.ListingID,
-                    //    a.AssemblyID,
-                    //    s.* 
-                    //    FROM [dbo].[Keyword] k
-                    //    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-                    //    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-                    //    INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-                    //    INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                    //    INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
-                    //    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-                    //    WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword;";
-                    //}
-                    //else
-                    //{
-                    //    query = @"
-                    //    SELECT DISTINCT 
-                    //    c.Name AS CityName,
-                    //    loc.Name AS LocationName,
-                    //    ar.Name AS AreaName,
-                    //    k.SeoKeyword,
-                    //    l.CompanyName,
-                    //    l.ListingURL,
-                    //    l.ListingID,
-                    //    a.AssemblyID,
-                    //    NULL AS SpecializationValue
-                    //    FROM [dbo].[Keyword] k
-                    //    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-                    //    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-                    //    INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-                    //    INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-                    //    INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
-                    //    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-                    //    WHERE k.SeoKeyword LIKE @Keyword;";
-                    //}
+                    // Queries for City, Location, and Area data
+                    //string cityQuery = $@"
+                    //SELECT DISTINCT TOP 3 c.Name AS CityName, k.SeoKeyword, l.CompanyName, l.ListingURL, l.ListingID, a.City, a.AssemblyID, s.*
+                    //FROM [dbo].[Keyword] k
+                    //INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
+                    //INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    //INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
+                    //INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                    //WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword ORDER BY k.SeoKeyword";
+
+                    //string locationQuery = $@"
+                    //SELECT DISTINCT TOP 3 loc.Name AS LocationName, k.SeoKeyword, l.CompanyName, l.ListingURL, l.ListingID, a.City, a.AssemblyID, s.*
+                    //FROM [dbo].[Keyword] k
+                    //INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
+                    //INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    //INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                    //INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                    //WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword ORDER BY k.SeoKeyword";
+
+                    //string areaQuery = $@"
+                    //SELECT DISTINCT TOP 3 ar.Name AS AreaName, k.SeoKeyword, l.CompanyName, l.ListingURL, l.ListingID, a.City, a.AssemblyID, s.*
+                    //FROM [dbo].[Keyword] k
+                    //INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
+                    //INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    //INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
+                    //INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                    //WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword ORDER BY k.SeoKeyword";
 
 
-                    // Query execute karo aur result process karo
-                    using (var command = new SqlCommand(query, connection))
+
+                    //// Server Query
+                    string cityQuery = $@"
+                    SELECT DISTINCT TOP 3 c.Name AS CityName, k.SeoKeyword, l.CompanyName, l.ListingURL, l.ListingID, a.City, a.AssemblyID, s.*
+                    FROM [dbo].[Keyword] k
+                    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
+                    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
+                    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                    WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword ORDER BY k.SeoKeyword";
+
+                    string locationQuery = $@"
+                    SELECT DISTINCT TOP 3 loc.Name AS LocationName, k.SeoKeyword, l.CompanyName, l.ListingURL, l.ListingID, a.City, a.AssemblyID, s.*
+                    FROM [dbo].[Keyword] k
+                    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
+                    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
+                    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                    WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword ORDER BY k.SeoKeyword";
+
+                    string areaQuery = $@"
+                    SELECT DISTINCT TOP 3 ar.Name AS AreaName, k.SeoKeyword, l.CompanyName, l.ListingURL, l.ListingID, a.City, a.AssemblyID, s.*
+                    FROM [dbo].[Keyword] k
+                    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
+                    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
+                    INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
+                    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
+                    WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword ORDER BY k.SeoKeyword";
+
+                    // Execute the queries and process results
+                    async Task ExecuteQuery(string query, Action<SqlDataReader> processReader)
                     {
-                        command.Parameters.AddWithValue("@Keyword", $"%{keyword}%");
-
-                        using (var reader = await command.ExecuteReaderAsync())
+                        using (var command = new SqlCommand(query, connection))
                         {
-                            while (await reader.ReadAsync())
+                            command.Parameters.AddWithValue("@Keyword", $"%{keyword}%");
+
+                            using (var reader = await command.ExecuteReaderAsync())
                             {
-                                // Specialization strings ke liye list initialize karo
-                                List<string> specializationList = new List<string>();
-
-                                // Agar column exist karta ho toh specialization strings banao
-                                if (columnExists)
+                                while (await reader.ReadAsync())
                                 {
-                                    // CityName ko add karo
-                                    if (reader["CityName"] != DBNull.Value)
-                                        specializationList.Add($"{specializationName} {reader["SeoKeyword"]} in {reader["CityName"]}");
-
-                                    // LocationName ko add karo
-                                    if (reader["LocationName"] != DBNull.Value)
-                                        specializationList.Add($"{specializationName} {reader["SeoKeyword"]} in {reader["LocationName"]}");
-
-                                    // AreaName ko add karo
-                                    if (reader["AreaName"] != DBNull.Value)
-                                        specializationList.Add($"{specializationName} {reader["SeoKeyword"]} in {reader["AreaName"]}");
+                                    processReader(reader);
                                 }
-
-                                // Sare specialization strings ko ek string mein join karo
-                                string result = string.Join("\n", specializationList); // Har entry ko new line mein daalna
-
-                                // Listing create karo
-                                var listing = new ListingSearch
-                                {
-                                    ListingId = reader["ListingID"]?.ToString(),
-                                    CompanyName = reader["CompanyName"]?.ToString(),
-                                    ListingURL = reader["ListingURL"]?.ToString(),
-                                    Keyword = reader["SeoKeyword"]?.ToString(),
-                                    City = reader["CityName"]?.ToString(),
-                                    Locality = reader["LocationName"]?.ToString(),
-                                    Area = reader["AreaName"]?.ToString(),
-                                    Address = new AddressSearch
-                                    {
-                                        AssemblyID = reader["AssemblyID"]?.ToString()
-                                    },
-                                    Specialiazation = columnExists ? result : null,
-                                };
-
-                                listings.Add(listing);
                             }
                         }
                     }
+
+                    await ExecuteQuery(cityQuery, reader =>
+                    {
+                        allListings.Add(new ListingSearch
+                        {
+                            City = reader["CityName"]?.ToString(),
+                            Keyword = reader["SeoKeyword"]?.ToString(),
+                            CompanyName = reader["CompanyName"]?.ToString(),
+                            ListingURL = reader["ListingURL"]?.ToString(),
+                            ListingId = reader["ListingID"]?.ToString(),
+                            Address = new AddressSearch
+                            {
+                                AssemblyID = reader["AssemblyID"]?.ToString()
+                            },
+                            Specialiazation = $"{specializationName} {reader["SeoKeyword"]} in {reader["CityName"]}"
+                        }); ;
+                    });
+
+                    await ExecuteQuery(locationQuery, reader =>
+                    {
+                        allListings.Add(new ListingSearch
+                        {
+                            Locality = reader["LocationName"]?.ToString(),
+                            Keyword = reader["SeoKeyword"]?.ToString(),
+                            CompanyName = reader["CompanyName"]?.ToString(),
+                            ListingURL = reader["ListingURL"]?.ToString(),
+                            ListingId = reader["ListingID"]?.ToString(),
+                            Address = new AddressSearch
+                            {
+                                AssemblyID = reader["AssemblyID"]?.ToString()
+                            },
+                            Specialiazation = $"{specializationName} {reader["SeoKeyword"]} in {reader["LocationName"]}"
+                        });
+                    });
+
+                    await ExecuteQuery(areaQuery, reader =>
+                    {
+                        allListings.Add(new ListingSearch
+                        {
+                            Area = reader["AreaName"]?.ToString(),
+                            Keyword = reader["SeoKeyword"]?.ToString(),
+                            CompanyName = reader["CompanyName"]?.ToString(),
+                            ListingURL = reader["ListingURL"]?.ToString(),
+                            ListingId = reader["ListingID"]?.ToString(),
+                            Address = new AddressSearch
+                            {
+                                AssemblyID = reader["AssemblyID"]?.ToString()
+                            },
+                            Specialiazation = $"{specializationName} {reader["SeoKeyword"]} in {reader["AreaName"]}"
+                        });
+                    });
                 }
 
-
-                return listings;
+                return allListings;
             }
             catch (Exception ex)
             {
-                // Exception log karo (optional: logger use kar sakte ho)
+                // Log the exception (replace with a logger if available)
                 Console.WriteLine($"Error in GetLocationSuggestionsBySpecializationAndKeyword: {ex.Message}");
-                throw; // Stack trace preserve karne ke liye
+                throw; // Preserve the stack trace
             }
         }
 
-
-        //private async Task<List<ListingSearch>> GetLocationSuggestionsBySpecializationAndKeyword(string searchText)
-        //{
-        //    try
-        //    {
-        //        // Predefined list of specialization names
-        //        var specializations = new List<string>
-        //        {
-        //            "Banks", "Beauty Parlors", "Bungalow", "Call Center", "Church", "Company", "Computer Institute",
-        //            "Dispensary", "Exhibition Stall", "Factory", "Farmhouse", "Gurudwara", "Gym", "Health Club", "Home",
-        //            "Hospital", "Hotel", "Laboratory", "Mandir", "Mosque", "Office", "Plazas", "Residential Society",
-        //            "Resorts", "Restaurants", "Salons", "Shop", "Shopping Mall", "Showroom", "Warehouse", "Accept Tender Work"
-        //        };
-
-        //        // Split specialization name and keyword from searchText
-        //        string specializationName = string.Empty;
-        //        string keyword = string.Empty;
-
-        //        foreach (var specialization in specializations)
-        //        {
-        //            if (searchText.StartsWith(specialization, StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                specializationName = specialization;
-        //                keyword = searchText.Substring(specialization.Length).Trim();
-        //                break;
-        //            }
-        //        }
-
-        //        // If no specialization found, return an empty list
-        //        if (string.IsNullOrEmpty(keyword))
-        //        {
-        //            return new List<ListingSearch>();
-        //        }
-
-        //        var listings = new List<ListingSearch>();
-        //        string connectionString = _configuration.GetConnectionString("MimListing");
-
-        //        // Sanitize specialization column name
-        //        string specializationColumn = specializationName.Replace(" ", ""); // Remove spaces for column names
-
-        //        using (var connection = new SqlConnection(connectionString))
-        //        {
-        //            await connection.OpenAsync();
-
-        //            // Check if the column exists in the Specialisation table
-        //            string checkColumnQuery = @"
-        //            SELECT 1 
-        //            FROM INFORMATION_SCHEMA.COLUMNS
-        //            WHERE TABLE_SCHEMA = 'listing' 
-        //            AND TABLE_NAME = 'Specialisation'
-        //            AND COLUMN_NAME = @ColumnName";
-
-        //            bool columnExists;
-        //            using (var checkCommand = new SqlCommand(checkColumnQuery, connection))
-        //            {
-        //                checkCommand.Parameters.AddWithValue("@ColumnName", specializationColumn);
-        //                columnExists = (await checkCommand.ExecuteScalarAsync()) != null;
-        //            }
-
-
-        //            //string query;
-        //            //if (!string.IsNullOrEmpty(keyword))
-        //            //{
-        //            //    query = $@"
-        //            //        SELECT DISTINCT 
-        //            //        c.Name AS CityName,
-        //            //        loc.Name AS LocationName,
-        //            //        ar.Name AS AreaName,
-        //            //        k.SeoKeyword,
-        //            //        l.CompanyName,
-        //            //        l.ListingURL,
-        //            //        l.ListingID,
-        //            //        a.AssemblyID,
-        //            //        s.*
-        //            //        FROM [dbo].[Keyword] k
-        //            //        INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-        //            //        INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-        //            //        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-        //            //        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-        //            //        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
-        //            //        INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-        //            //        WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword;";
-        //            //}
-        //            //else
-        //            //{
-        //            //    query = @"
-        //            //        SELECT DISTINCT 
-        //            //        c.Name AS CityName,
-        //            //        loc.Name AS LocationName,
-        //            //        ar.Name AS AreaName,
-        //            //        k.SeoKeyword,
-        //            //        l.CompanyName,
-        //            //        l.ListingURL,
-        //            //        l.ListingID,
-        //            //        a.AssemblyID,
-        //            //        NULL AS SpecializationValue
-        //            //        FROM [dbo].[Keyword] k
-        //            //        INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-        //            //        INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-        //            //        INNER JOIN [MimShared].[shared].[City] c ON a.City = c.CityID
-        //            //        INNER JOIN [MimShared].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-        //            //        INNER JOIN [MimShared].[dbo].[Area] ar ON a.LocalityID = ar.Id
-        //            //        INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-        //            //        WHERE k.SeoKeyword LIKE @Keyword;";
-        //            //}
-
-
-        //            string query;
-        //            if (!string.IsNullOrEmpty(keyword))
-        //            {
-        //                query = $@"
-        //                    SELECT DISTINCT 
-        //                    c.Name AS CityName,
-        //                    loc.Name AS LocationName,
-        //                    ar.Name AS AreaName,
-        //                    k.SeoKeyword,
-        //                    l.CompanyName,
-        //                    l.ListingURL,
-        //                    l.ListingID,
-        //                    a.AssemblyID,
-        //                    s.*
-        //                    FROM [dbo].[Keyword] k
-        //                    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-        //                    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-        //                    INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-        //                    INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-        //                    INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
-        //                    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-        //                    WHERE s.{specializationColumn} = 1 AND k.SeoKeyword LIKE @Keyword;";
-        //            }
-        //            else
-        //            {
-        //                query = @"
-        //                    SELECT DISTINCT 
-        //                    c.Name AS CityName,
-        //                    loc.Name AS LocationName,
-        //                    ar.Name AS AreaName,
-        //                    k.SeoKeyword,
-        //                    l.CompanyName,
-        //                    l.ListingURL,
-        //                    l.ListingID,
-        //                    a.AssemblyID,
-        //                    NULL AS SpecializationValue
-        //                    FROM [dbo].[Keyword] k
-        //                    INNER JOIN [listing].[Listing] l ON k.ListingID = l.ListingID
-        //                    INNER JOIN [listing].[Address] a ON k.ListingId = a.ListingId
-        //                    INNER JOIN [MimShared_Api].[shared].[City] c ON a.City = c.CityID
-        //                    INNER JOIN [MimShared_Api].[dbo].[Location] loc ON a.AssemblyID = loc.Id
-        //                    INNER JOIN [MimShared_Api].[dbo].[Area] ar ON a.LocalityID = ar.Id
-        //                    INNER JOIN [listing].[Specialisation] s ON l.ListingID = s.ListingID
-        //                    WHERE k.SeoKeyword LIKE @Keyword;";
-        //            }
-
-        //            // Execute the query and process the results
-        //            using (var command = new SqlCommand(query, connection))
-        //            {
-        //                command.Parameters.AddWithValue("@Keyword", $"%{keyword}%");
-
-        //                using (var reader = await command.ExecuteReaderAsync())
-        //                {
-        //                    while (await reader.ReadAsync())
-        //                    {
-        //                        // For each row, create a listing and add it to the list
-        //                        var listing = new ListingSearch
-        //                        {
-        //                            ListingId = reader["ListingID"]?.ToString(),
-        //                            CompanyName = reader["CompanyName"]?.ToString(),
-        //                            ListingURL = reader["ListingURL"]?.ToString(),
-        //                            Keyword = reader["SeoKeyword"]?.ToString(),
-        //                            City = reader["CityName"]?.ToString(),
-        //                            Locality = reader["LocationName"]?.ToString(),
-        //                            Area = reader["AreaName"]?.ToString(),
-        //                            Address = new AddressSearch
-        //                            {
-        //                                AssemblyID = reader["AssemblyID"]?.ToString()
-        //                            },
-        //                            Specialiazation = columnExists
-        //                                ? $"{specializationName} {reader["SeoKeyword"]} in {reader["CityName"]}"
-        //                                : null,
-        //                        };
-
-        //                        listings.Add(listing);
-        //                    }
-        //                }
-        //            }
-        //        }
-
-        //        return listings;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Log the exception (optional: use a logger)
-        //        Console.WriteLine($"Error in GetKeywordSuggestionsBySpecializationAndKeyword: {ex.Message}");
-        //        throw; // Preserve stack trace for further analysis
-        //    }
-        //}
 
         private async Task<List<ListingSearch>> GetListingsByOwnername(string ownername)
         {
@@ -1301,7 +940,7 @@ namespace SignInApi.Controllers
             string connectionString = _configuration.GetConnectionString("MimListing");
             using (var connection = new SqlConnection(connectionString))
             {
-                string query = @"SELECT o.ListingID, l.CompanyName, l.ListingURL, o.MrndMs, o.OwnerName, a.AssemblyID
+                string query = @"SELECT o.ListingID, l.CompanyName, l.ListingURL, o.MrndMs, o.OwnerName, o.LastName, a.AssemblyID
                 FROM [dbo].[OwnerImage] o
                 LEFT JOIN [listing].[Listing] l ON o.ListingID = l.ListingID
                 LEFT JOIN [listing].[Address] a ON o.ListingID = a.ListingID
@@ -1323,6 +962,7 @@ namespace SignInApi.Controllers
                                 CompanyName = reader["CompanyName"].ToString(),
                                 ListingURL = reader["ListingURL"].ToString(),
                                 Ownername = reader["OwnerName"].ToString(),
+                                OwnerLastname = reader["LastName"].ToString(),
                                 OwnerPrefix = reader["MrndMs"].ToString(),
                                 Address = new AddressSearch
                                 {

@@ -11,10 +11,12 @@
         public string category { get; set; }
         public int CategoryId { get; set; }
         public string keyword { get; set; }
+        public string allspecialiazationkeyword { get; set; }
         public string keywordId { get; set; }
         public string Mobilenumber { get; set; }
         public string Gstnumber { get; set; }
         public string Ownername { get; set; }
+        public string OwnerLastname { get; set; }
         public string Specialization { get; set; }
         public string OwnerPrefix { get; set; }
     }
@@ -35,18 +37,8 @@
         public string Ownername { get; set; }
         public string Specialiazation { get; set; }
         public string OwnerPrefix { get; set; }
-        //public List<ListingSearch> SubListings { get; set; }
-    }
-
-    public class ListingFreeSearch
-    {
-        public string ListingId { get; set; }
-        public string CompanyName { get; set; }
-        public string ListingURL { get; set; }
-        public AddressSearch Address { get; set; }
-        public string Keyword { get; set; }
-        public string OwnerName { get; set; }
-        public AddressSearch Addreses { get; set; }
+        public string OwnerLastname { get; set; }
+        public string allspecialiazationkeyword { get; set; }
     }
 
     public class AddressSearch
@@ -65,11 +57,5 @@
     public class CitySearch
     {
         public string Name { get; set; }
-    }
-
-    public class category
-    {
-        public string categories { get; set; }
-        public int CategoryId { get; set; }
     }
 }

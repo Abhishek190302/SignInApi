@@ -38,23 +38,14 @@ namespace SignInApi.Models
 
                     int offset = (pageNumber - 1) * pageSize;
 
-                    // Fetch listings
-                    //var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
-
                     //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
                     //    "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
                     //    "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
                     //    "LEFT JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
                     //    "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
                     //    "WHERE c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
-                    //    "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC " +
-                    //    "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
-
-                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM[listing].[Listing] l " +
-                    //   "JOIN[listing].[Categories] c ON l.ListingID = c.ListingID JOIN[listing].[Address] a " +
-                    //   "ON l.ListingID = a.ListingID JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
-                    //   "WHERE c.SecondCategoryID = @SubCategoryId  AND(@CityName IS NULL OR city.Name = @CityName) " +
-                    //   "ORDER BY l.ListingID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+                    //    "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC, " +
+                    //    "l.PackageBuyDate ASC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
 
                     var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
@@ -63,8 +54,8 @@ namespace SignInApi.Models
                         "LEFT JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
                         "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
                         "WHERE c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
-                        "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC " +
-                        "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+                        "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC, " +
+                        "l.PackageBuyDate ASC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
 
                     listingCmd.Parameters.AddWithValue("@Offset", offset);
@@ -312,7 +303,7 @@ namespace SignInApi.Models
                     //       "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
                     //       "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
                     //       "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
-                    //       "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC " +
+                    //       "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
                     //       "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
 
@@ -324,7 +315,7 @@ namespace SignInApi.Models
                            "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
                            "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
                            "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
-                           "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC " +
+                           "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
                            "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
 
@@ -591,8 +582,8 @@ namespace SignInApi.Models
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
-                    var Turnover = dt.Rows[0]["Turnover"].ToString();
-                    return Turnover;
+                    string turnover = dt.Rows[0]["Turnover"] != DBNull.Value ? dt.Rows[0]["Turnover"].ToString() : null;
+                    return !string.IsNullOrWhiteSpace(turnover) ? turnover : null; // Check for blank value
                 }
                 else
                 {
@@ -680,7 +671,12 @@ namespace SignInApi.Models
 
         private string GetColumnValueOrNull(DataRow row, string columnName)
         {
-            return row[columnName] != DBNull.Value ? row[columnName].ToString() : null;
+            if (row[columnName] != DBNull.Value) // Check if value is not null (DBNull)
+            {
+                string value = row[columnName].ToString();
+                return !string.IsNullOrWhiteSpace(value) ? value : null; // Check for blank value
+            }
+            return null; // Return null if DBNull
         }
 
         private async Task<string> GetYearOfEstablishment(int listingId)
@@ -740,8 +736,13 @@ namespace SignInApi.Models
                 da.Fill(dt);
                 if (dt.Rows.Count > 0)
                 {
-                    var NumberOfEmployees = dt.Rows[0]["NumberOfEmployees"].ToString();
-                    return NumberOfEmployees;
+                    string numberOfEmployees = dt.Rows[0]["NumberOfEmployees"] != DBNull.Value
+                     ? dt.Rows[0]["NumberOfEmployees"].ToString()
+                     : null; // Check for DBNull value
+
+                    return !string.IsNullOrWhiteSpace(numberOfEmployees)
+                        ? numberOfEmployees
+                        : null;
                 }
                 else
                 {
