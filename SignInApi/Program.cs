@@ -43,7 +43,7 @@ builder.Services.AddTransient<IUserNewProfileService, UserNewProfileService>();
 builder.Services.AddTransient<EnquiryListingRepository>();
 builder.Services.AddTransient<IUserProfileService, UserProfileService>();
 builder.Services.AddTransient<ISharedService, SharedService>();
-
+builder.Services.AddTransient<ITrackUserService, TrackUserService>();
 builder.Services.AddTransient<ILocalityService, LocalityService>();
 builder.Services.AddTransient<IPincodeService, PincodeService>();
 builder.Services.AddTransient<IAreaService, AreaService>();

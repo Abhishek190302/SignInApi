@@ -23,11 +23,11 @@ namespace SignInApi.Controllers
 
         [HttpGet] 
         [Route("GetCategoriesListing")]
-        public async Task<IActionResult> GetCategoriesListing(int pageNumber = 1, int pageSize = 10 , int? subCategoryid = null, string cityName = null)
+        public async Task<IActionResult> GetCategoriesListing(int pageNumber = 1, int pageSize = 10 , int? subCategoryid = null)
         {   
             try
             {
-                var listings = await _listingService.GetListings(pageNumber, pageSize, subCategoryid, cityName);
+                var listings = await _listingService.GetListings(pageNumber, pageSize, subCategoryid);
                 return Ok(listings);
 
             }
@@ -58,11 +58,11 @@ namespace SignInApi.Controllers
 
         [HttpGet]
         [Route("GetCategoriesListingByKeywordLocation")]
-        public async Task<IActionResult> GetCategoriesListingByKeywordLocation(int pageNumber = 1, int pageSize = 10 , string cityName = null, string Keywords = null)
+        public async Task<IActionResult> GetCategoriesListingByKeywordLocation(int pageNumber = 1, int pageSize = 10 , string Keywords = null)
         {
             try
             {
-                var listings = await _listingService.GetListingsKeywordlocation(pageNumber, pageSize , cityName, Keywords);
+                var listings = await _listingService.GetListingsKeywordlocation(pageNumber, pageSize , Keywords);
                 return Ok(listings);
 
             }

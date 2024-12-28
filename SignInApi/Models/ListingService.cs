@@ -27,7 +27,7 @@ namespace SignInApi.Models
             _logger = logger;
         }
 
-        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int? subCategoryid, string cityName = null)
+        public async Task<List<ListingResult>> GetListings(int pageNumber, int pageSize, int? subCategoryid)
         {
             var listings = new List<ListingResult>();
             try
@@ -43,7 +43,7 @@ namespace SignInApi.Models
                     //    "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
                     //    "LEFT JOIN [MimShared].[shared].[City] city ON a.City = city.CityID " +
                     //    "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
-                    //    "WHERE c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
+                    //    "WHERE c.SecondCategoryID = @SubCategoryId " +
                     //    "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC, " +
                     //    "l.PackageBuyDate ASC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
@@ -53,15 +53,24 @@ namespace SignInApi.Models
                         "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
                         "LEFT JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
                         "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
-                        "WHERE c.SecondCategoryID = @SubCategoryId AND (@CityName IS NULL OR city.Name = @CityName) " +
+                        "WHERE c.SecondCategoryID = @SubCategoryId " +
                         "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC, " +
                         "l.PackageBuyDate ASC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
+
+
+                    //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
+                    //    "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                    //    "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                    //    "LEFT JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                    //    "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
+                    //    "WHERE c.SecondCategoryID = @SubCategoryId " +
+                    //    "ORDER BY CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END, CAST(p.Price AS INT) DESC, " +
+                    //    "l.PackageBuyDate ASC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; ", conn);
 
 
                     listingCmd.Parameters.AddWithValue("@Offset", offset);
                     listingCmd.Parameters.AddWithValue("@PageSize", pageSize);
                     listingCmd.Parameters.AddWithValue("@SubCategoryId", subCategoryid);
-                    listingCmd.Parameters.AddWithValue("@CityName", cityName);
 
                     using (SqlDataReader reader = await listingCmd.ExecuteReaderAsync())
                     {
@@ -77,7 +86,8 @@ namespace SignInApi.Models
                                 CompanyName = reader.GetString(reader.GetOrdinal("CompanyName")),
                                 Url = reader.GetString(reader.GetOrdinal("ListingURL")),
                                 ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
-                                ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                ListingKeyword = reader.IsDBNull(reader.GetOrdinal("BusinessCategory")) ? null : reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                //ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
                                 //GSTNumber = reader.GetString(reader.GetOrdinal("GSTNumber")),
@@ -166,8 +176,7 @@ namespace SignInApi.Models
                 using (SqlConnection conn = new SqlConnection(_connectionString))
                 {
                     await conn.OpenAsync();
-                    // Fetch listings
-                    //var listingCmd = new SqlCommand("SELECT * FROM [listing].[Listing] WHERE ListingID IN (SELECT ListingID FROM [listing].[Categories] WHERE SecondCategoryID = @SubCategoryId) ORDER BY ListingID  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY", conn);
+
 
                     //var listingCmd = new SqlCommand("SELECT l.*, a.City FROM [listing].[Listing] l " +
                     //    "JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
@@ -203,7 +212,8 @@ namespace SignInApi.Models
                                 CompanyName = reader.GetString(reader.GetOrdinal("CompanyName")),
                                 Url = reader.GetString(reader.GetOrdinal("ListingURL")),
                                 ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
-                                ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                ListingKeyword = reader.IsDBNull(reader.GetOrdinal("BusinessCategory")) ? null : reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                //ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
                                 GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
@@ -282,7 +292,7 @@ namespace SignInApi.Models
             return listings;
         }
 
-        public async Task<List<ListingResult>> GetListingsKeywordlocation(int pageNumber, int pageSize,string cityName, string Keywords)
+        public async Task<List<ListingResult>> GetListingsKeywordlocation(int pageNumber, int pageSize, string Keywords)
         {
             var listings = new List<ListingResult>();
             try
@@ -302,8 +312,7 @@ namespace SignInApi.Models
                     //       "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
                     //       "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
                     //       "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
-                    //       "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
-                    //       "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
+                    //       "WHERE (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
                     //       "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
 
@@ -314,15 +323,24 @@ namespace SignInApi.Models
                            "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
                            "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
                            "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
-                           "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
-                           "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
+                           "WHERE (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
                            "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+                    //string query = "SELECT DISTINCT l.*, a.City,CASE WHEN p.Price IS NOT NULL THEN 1 ELSE 2 END AS PriceOrder, CAST(p.Price AS INT) AS PriceValue FROM [listing].[Listing] l " +
+                    //       "LEFT JOIN [listing].[Categories] c ON l.ListingID = c.ListingID " +
+                    //       "LEFT JOIN [listing].[Address] a ON l.ListingID = a.ListingID " +
+                    //       "LEFT JOIN [MimShared_Api].[shared].[City] city ON a.City = city.CityID " +
+                    //       "LEFT JOIN [dbo].[Packages] p ON l.PackageID = p.Id " +
+                    //       "LEFT JOIN [dbo].[Keyword] k ON l.ListingID = k.ListingID " +
+                    //       "LEFT JOIN [listing].[Communication] comm ON l.ListingID = comm.ListingID " +
+                    //       "WHERE (@CityName IS NULL OR city.Name = @CityName) " +
+                    //       "AND (@Keywords IS NULL OR (k.SeoKeyword = @Keywords) OR (comm.Mobile = @Keywords) OR (l.GSTNumber = @Keywords AND @IsGstNumber = 1) OR (TRY_CAST(@Keywords AS INT) IS NOT NULL AND c.SecondCategoryID = TRY_CAST(@Keywords AS INT))) ORDER BY PriceOrder, PriceValue DESC, l.PackageBuyDate ASC " +
+                    //       "OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
 
                     var listingCmd = new SqlCommand(query, conn);
                     listingCmd.Parameters.AddWithValue("@Offset", offset);
                     listingCmd.Parameters.AddWithValue("@PageSize", pageSize);
-                    listingCmd.Parameters.AddWithValue("@CityName", cityName ?? (object)DBNull.Value);
                     listingCmd.Parameters.AddWithValue("@Keywords", Keywords ?? (object)DBNull.Value);
                     listingCmd.Parameters.AddWithValue("@IsGstNumber", isGstNumber ? 1 : 0);
 
@@ -340,7 +358,8 @@ namespace SignInApi.Models
                                 CompanyName = reader.GetString(reader.GetOrdinal("CompanyName")),
                                 Url = reader.GetString(reader.GetOrdinal("ListingURL")),
                                 ListingUrl = reader.GetString(reader.GetOrdinal("ListingURL")),
-                                ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                ListingKeyword = reader.IsDBNull(reader.GetOrdinal("BusinessCategory")) ? null : reader.GetString(reader.GetOrdinal("BusinessCategory")),
+                                //ListingKeyword = reader.GetString(reader.GetOrdinal("BusinessCategory")),
                                 SelfCreated = reader.GetBoolean(reader.GetOrdinal("SelfCreated")),
                                 ClaimedListing = reader.GetBoolean(reader.GetOrdinal("ClaimedListing")),
                                 GSTNumber = reader.IsDBNull(reader.GetOrdinal("GSTNumber")) ? null : reader.GetString(reader.GetOrdinal("GSTNumber")),
